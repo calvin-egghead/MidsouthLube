@@ -5,11 +5,15 @@ import {
   featuredProducts,
   normalizeDashes,
   productCategories,
+  productLabels,
   products,
+  skuDirectoryDocument,
 } from "./data/siteData";
 
 const contactEmail = "info@midsouthlube.com";
-const contactPhone = "+1 318-614-7948";
+const contactPhone = "(844) 770-LUBE (5823)";
+const contactPhoneHref = "tel:+18447705823";
+const contactAddress = "1122 Garland Gin Road, Downsville, LA 71234";
 
 const routeMeta = {
   "/": [
@@ -169,7 +173,7 @@ function Header({ navigate, currentPath }) {
             })}
           </nav>
           <div className="header-actions">
-            <a className="header-phone" href="tel:+13186147948">{contactPhone}</a>
+            <a className="header-phone" href={contactPhoneHref}>{contactPhone}</a>
             <ButtonLink href="/contact-us/#quote" navigate={navigate} variant="primary">Talk to a Specialist</ButtonLink>
             <button
               className="menu-toggle"
@@ -195,7 +199,7 @@ function Header({ navigate, currentPath }) {
             const active = currentPath === href || (href === "/products/" && currentPath.startsWith("/product/"));
             return <Link key={href} href={href} navigate={navigate} aria-current={active ? "page" : undefined}>{label}</Link>;
           })}
-          <a className="mobile-menu__phone" href="tel:+13186147948">{contactPhone}</a>
+          <a className="mobile-menu__phone" href={contactPhoneHref}>{contactPhone}</a>
           <ButtonLink href="/contact-us/#quote" navigate={navigate}>Talk to a Specialist</ButtonLink>
         </nav>
       </div>
@@ -210,9 +214,9 @@ function Footer({ navigate }) {
         <div className="footer-brand">
           <Brand navigate={navigate} />
           <p>High-performance lubricants designed for food-grade compliance, industrial durability, and reduced downtime.</p>
-          <a href="tel:+13186147948">{contactPhone}</a>
+          <a href={contactPhoneHref}>{contactPhone}</a>
           <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
-          <span>Downsville, Louisiana</span>
+          <span>{contactAddress}</span>
         </div>
         <div>
           <h2>Products</h2>
@@ -431,7 +435,7 @@ function HomePage({ navigate }) {
           <p>Let us know what you need and we’ll help you find the right solution. Whether you’re replacing a spec or building a system from scratch, our team’s here to help.</p>
           <div className="home-lead-section__direct">
             <span>Prefer to talk now?</span>
-            <a href="tel:+13186147948">{contactPhone}</a>
+            <a href={contactPhoneHref}>{contactPhone}</a>
           </div>
         </div>
         <div data-reveal><HomeLeadForm /></div>
@@ -507,7 +511,7 @@ function ProductPage({ product, navigate }) {
             <div className="product-price"><span>Catalog range</span><strong>{product.priceRange}</strong></div>
             <div className="button-row">
               <ButtonLink href={`/contact-us/?product=${encodeURIComponent(product.name)}#quote`} navigate={navigate}>Request a Quote</ButtonLink>
-              <a className="button button--secondary" href={`tel:+13186147948`}>Call {contactPhone}</a>
+              <a className="button button--secondary" href={contactPhoneHref}>Call {contactPhone}</a>
             </div>
           </div>
         </section>
@@ -523,27 +527,53 @@ function ProductPage({ product, navigate }) {
           </div>
         </section>
 
-        <section className="section options-section" aria-labelledby="options-title">
+        {product.packageSkus.length ? <section className="section options-section" aria-labelledby="package-skus-title">
           <div className="section-heading">
-            <h2 id="options-title">Available options</h2>
-            <p>Catalog pricing and availability should be confirmed when requesting a quote.</p>
+            <h2 id="package-skus-title">Package SKU directory</h2>
+            <p>Current package-level SKUs supplied by Mid South. Confirm the required grade and availability when requesting a quote.</p>
           </div>
-          {product.variations.length ? (
-            <>
-              <p className="table-scroll-hint">Swipe horizontally to view all option details.</p>
-              <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} package options`}>
+          <p className="table-scroll-hint">Swipe horizontally to view all package details.</p>
+          <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} package SKU directory`}>
+            <table className="variation-table variation-table--compact">
+              <thead><tr><th>Packaging</th><th>Package SKU</th></tr></thead>
+              <tbody>{product.packageSkus.map((item) => (
+                <tr key={item.sku}><td>{item.packaging}</td><td><code>{item.sku}</code></td></tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </section> : null}
+
+        {product.labels.length ? <section className="section product-documents" aria-labelledby="product-labels-title">
+          <div className="section-heading">
+            <h2 id="product-labels-title">Printable product labels</h2>
+            <p>Production-ready PDF labels supplied by Mid South for the exact SKUs and package sizes below.</p>
+          </div>
+          <div className="label-download-grid">
+            {product.labels.map((label) => (
+              <article key={label.href}>
+                <span>{label.option}</span>
+                <h3>{label.sku}</h3>
+                <a className="button button--secondary" href={label.href} download>Download PDF Label</a>
+              </article>
+            ))}
+          </div>
+        </section> : null}
+
+        {product.variations.length ? <section className="section options-section" aria-labelledby="options-title">
+          <div className="section-heading">
+            <h2 id="options-title">{product.packageSkus.length ? "Grade and price references" : "Available options"}</h2>
+            <p>{product.packageSkus.length ? "Grade-specific options and prices retained from the prior web catalog. Confirm current pricing and availability when requesting a quote." : "Pricing and availability should be confirmed when requesting a quote."}</p>
+          </div>
+          <p className="table-scroll-hint">Swipe horizontally to view all option details.</p>
+          <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} grade and price references`}>
               <table className="variation-table">
                 <thead><tr><th>Option</th><th>SKU</th><th>Catalog price</th><th>Availability</th></tr></thead>
                 <tbody>{product.variations.map((variation) => (
                   <tr key={variation.id}><td>{variation.option}</td><td><code>{variation.sku}</code></td><td>{variation.price}</td><td>{variation.inStock ? "Available" : "Ask for availability"}</td></tr>
                 ))}</tbody>
               </table>
-              </div>
-            </>
-          ) : (
-            <div className="availability-note"><h3>Current Options</h3><p>This product did not return active package variations or prices in the prior catalog.</p></div>
-          )}
-        </section>
+          </div>
+        </section> : null}
 
         {related.length ? <section className="section related-products"><div className="section-heading"><h2>Related products</h2></div><div className="product-grid product-grid--three">{related.map((item) => <ProductCard key={item.id} product={item} navigate={navigate} />)}</div></section> : null}
       </div>
@@ -661,8 +691,8 @@ function ContactPage() {
           <h2>Get in Touch</h2>
           <p>We would love to speak with you. Feel free to reach out using the details below.</p>
           <div className="contact-method"><span>Email</span><a href={`mailto:${contactEmail}`}>{contactEmail}</a><p>For inquiries or support, please reach out to us anytime.</p></div>
-          <div className="contact-method"><span>Phone</span><a href="tel:+13186147948">{contactPhone}</a><p>Call us for immediate assistance with your lubrication needs.</p></div>
-          <div className="contact-method"><span>Location</span><strong>Downsville, Louisiana</strong><p>We offer personalized service from our Louisiana headquarters.</p></div>
+          <div className="contact-method"><span>Phone</span><a href={contactPhoneHref}>{contactPhone}</a><p>Call us for immediate assistance with your lubrication needs.</p></div>
+          <div className="contact-method"><span>Location</span><strong>{contactAddress}</strong><p>We offer personalized service from our Louisiana headquarters.</p></div>
         </div>
         <ContactForm />
       </section>
@@ -679,9 +709,29 @@ function ResourcesPage({ navigate }) {
   ];
   return (
     <>
-      <PageHero title="Resources" copy="Download the spec sheets from our products below." image="/images/company/processing-line.jpg" />
+      <PageHero title="Resources" copy="Download the current product SKU directory and production-ready labels supplied by Mid South Lubricants." image="/images/company/processing-line.jpg" />
       <section className="section resources-section">
-        <div className="resources-intro"><h2>Request a Document</h2><p>The prior site listed a resource library but did not publish working PDF files. Contact Mid South for the current document tied to your product and application.</p></div>
+        <div className="resources-intro">
+          <h2>Current SKU Directory</h2>
+          <p>Package-level SKU references for the Mid South product lineup, including 1 gallon pails, 5 gallon pails, 55 gallon drums, and 275 gallon totes.</p>
+          <a className="button button--primary" href={skuDirectoryDocument} download>Download SKU Directory</a>
+        </div>
+        <div className="resource-grid label-resource-grid">
+          {productLabels.map((label) => (
+            <article key={label.href}>
+              <span className="resource-kicker">{label.productName}</span>
+              <h3>{label.sku}</h3>
+              <p>{label.option}</p>
+              <a className="button button--text" href={label.href} download>Download PDF Label</a>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="section resource-support" aria-labelledby="resource-support-title">
+        <div className="section-heading">
+          <h2 id="resource-support-title">Need another document?</h2>
+          <p>Contact Mid South for product-specific registrations, specifications, and application support.</p>
+        </div>
         <div className="resource-grid">{groups.map(([title, copy]) => <article key={title}><h3>{title}</h3><p>{copy}</p><ButtonLink href="/contact-us/#quote" navigate={navigate} variant="text">Request Documents</ButtonLink></article>)}</div>
       </section>
       <QuoteBand navigate={navigate} />
@@ -695,7 +745,7 @@ function LegalPage({ type }) {
     <section className="legal-page section">
       <h1>{isPrivacy ? "Privacy Policy" : "Website Terms"}</h1>
       <p className="legal-intro">The prior website contained unreviewed WordPress sample language. A finalized {isPrivacy ? "privacy policy" : "terms document"} should be supplied by Mid South Lubricants before publication.</p>
-      <div className="legal-notice"><h2>Questions</h2><p>For questions about this website or information submitted through the quote form, contact <a href={`mailto:${contactEmail}`}>{contactEmail}</a> or call <a href="tel:+13186147948">{contactPhone}</a>.</p></div>
+      <div className="legal-notice"><h2>Questions</h2><p>For questions about this website or information submitted through the quote form, contact <a href={`mailto:${contactEmail}`}>{contactEmail}</a> or call <a href={contactPhoneHref}>{contactPhone}</a>.</p></div>
     </section>
   );
 }

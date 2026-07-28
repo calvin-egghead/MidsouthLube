@@ -3,6 +3,89 @@ import variationRecords from "../../old-site-archive/raw/product-variations.json
 
 const variationById = new Map(variationRecords.map((variation) => [variation.id, variation]));
 
+const packageSizes = [
+  ["1 Gallon Pail", "1P"],
+  ["5 Gallon Pail", "5P"],
+  ["55 Gallon Drum", "55D"],
+  ["275 Gallon Tote", "275T"],
+];
+
+const skuFamilyPrefixes = new Map([
+  ["MSL-2284SBAWHF", "MSL-2284SBAWHF"],
+  ["MSL-2288SFGAWHF", "MSL-2288SFGAWHF"],
+  ["MSL-2584SFRHF", "MSL-2584SFRHF"],
+  ["MSL-4584SFRGHF", "MSL-4584FRFGHF"],
+  ["MSL-C3FGHTF", "MSL-C3FGHTF"],
+  ["MSL-C5HFFGHTF", "MSL-C5HFFGHTF"],
+  ["MSL-C12FGLTHTF", "MSL-C12FGLTHTF"],
+  ["MSL-6488LTSSFL", "MSL-6488LTSSFL"],
+  ["MSL-6831SFGLTCL", "MSL-6831SFGLTCL"],
+  ["MSL-NXT717", "MSL-NXT717"],
+  ["MSL-6061FGCF6", "MSL-6061FGCF6"],
+  ["MSL-2015SCF8", "MSL-2015SCF8"],
+  ["MSL-6321UCF10", "MSL-6321UCF10"],
+  ["MSL-3045SHTSGG", "MSL-3045SHTSGG"],
+  ["MSL-2087SFGEPACG", "MSL-2087SFGEPACG"],
+  ["MSL-3157SFGEPCSG", "MSL-3157SFGEPCSG"],
+]);
+
+const labelsByProductCode = new Map([
+  ["MSL-2090BO", [
+    {
+      sku: "MSL-2090BO-20-55D",
+      option: "Grade 20 - 55 Gallon Drum",
+      href: "/documents/labels/MSL-2090BO-20-55D-drum-label.pdf",
+    },
+  ]],
+  ["MSL-2185SFGCLWT", [
+    {
+      sku: "MSL-2185-22",
+      option: "Grade 22 - 5 Gallon Pail",
+      href: "/documents/labels/MSL-2185-22-pail-label.pdf",
+    },
+    {
+      sku: "MSL-2185SFGCLWT-22-55D",
+      option: "Grade 22 - 55 Gallon Drum",
+      href: "/documents/labels/MSL-2185SFGCLWT-22-55D-drum-label.pdf",
+    },
+    {
+      sku: "MSL-2185SFGCLWT-68-5P",
+      option: "Grade 68 - 5 Gallon Pail",
+      href: "/documents/labels/MSL-2185SFGCLWT-68-5P-pail-label.pdf",
+    },
+  ]],
+  ["MSL-2288SFGAWHF", [
+    {
+      sku: "MSL-2288SFGAWHF-46-275T",
+      option: "ISO 46 - 275 Gallon Tote",
+      href: "/documents/labels/MSL-2288SFGAWHF-46-275T-tote-label.pdf",
+    },
+    {
+      sku: "MSL-2288SFGAWHF-68-55D",
+      option: "ISO 68 - 55 Gallon Drum",
+      href: "/documents/labels/MSL-2288SFGAWHF-68-55D-drum-label.pdf",
+    },
+    {
+      sku: "MSL-2288SFGAWHF-68-275T",
+      option: "ISO 68 - 275 Gallon Tote",
+      href: "/documents/labels/MSL-2288SFGAWHF-68-275T-tote-label.pdf",
+    },
+  ]],
+]);
+
+const productCodeOverridesBySlug = new Map([
+  ["caldera-5-high-flash-food-grade-heat-transfer-fluid", ["MSL-C5HFFGHTF"]],
+]);
+
+const packageSkusFor = (productCodes) => {
+  const prefix = productCodes.map((code) => skuFamilyPrefixes.get(code)).find(Boolean);
+  if (!prefix) return [];
+  return packageSizes.map(([packaging, suffix]) => ({
+    packaging,
+    sku: `${prefix}-${suffix}`,
+  }));
+};
+
 export const normalizeDashes = (value = "") => value
   .replace(/[\u2014\u2013]/g, "-")
   .replace(/&(?:mdash|ndash);|&#(?:8211|8212);/gi, "-");
@@ -46,7 +129,7 @@ const localImage = (source, slug) => {
   return `/images/catalog/${source.split("/").pop()}`;
 };
 
-export const products = productRecords
+const archivedProducts = productRecords
   .map((product) => {
     const optionAttribute = product.attributes.find((attribute) => attribute.has_variations);
     const featureAttributes = product.attributes
@@ -68,6 +151,10 @@ export const products = productRecords
       };
     });
 
+    const productCodes = productCodeOverridesBySlug.get(product.slug)
+      || product.tags.map((tag) => normalizeDashes(tag.name));
+    const labels = productCodes.flatMap((code) => labelsByProductCode.get(code) || []);
+
     return {
       id: product.id,
       name: normalizeDashes(product.name),
@@ -77,15 +164,79 @@ export const products = productRecords
       descriptionHtml: normalizeHtml(product.description),
       shortDescriptionHtml: normalizeHtml(product.short_description),
       categories: product.categories.map((category) => normalizeDashes(category.name)),
-      productCodes: product.tags.map((tag) => normalizeDashes(tag.name)),
+      productCodes,
       features: featureAttributes,
       variations,
+      packageSkus: packageSkusFor(productCodes),
+      labels,
       priceRange: priceRange(product),
       inStock: Boolean(product.is_in_stock),
       purchasable: Boolean(product.is_purchasable),
     };
-  })
+  });
+
+const newProducts = [
+  {
+    id: "new-2090",
+    name: "Food Grade White Oil",
+    slug: "food-grade-white-oil",
+    href: "/product/food-grade-white-oil/",
+    image: "/images/products-group.webp",
+    descriptionHtml: "<p>Food-grade white oil supplied by Mid South Lubricants for food-processing and related applications. Contact our team with the equipment, operating conditions, and required grade for selection support.</p><p><b>Current labeled option:</b> Grade 20 in a 55 gallon drum.</p>",
+    shortDescriptionHtml: "<p>Food-grade white oil available in a Grade 20, 55 gallon drum configuration.</p>",
+    categories: ["Food Grade", "White Oil"],
+    productCodes: ["MSL-2090BO"],
+    features: ["Food-grade formulation", "Made in the USA", "55 gallon drum label available"],
+    variations: [
+      {
+        id: "msl-2090bo-20-55d",
+        sku: "MSL-2090BO-20-55D",
+        option: "Grade 20 - 55 Gallon Drum",
+        price: "Contact for pricing",
+        inStock: false,
+        purchasable: false,
+      },
+    ],
+    packageSkus: [],
+    labels: labelsByProductCode.get("MSL-2090BO"),
+    priceRange: "Contact for pricing",
+    inStock: false,
+    purchasable: false,
+  },
+  {
+    id: "new-2185",
+    name: "Synthetic Food Grade Chain Lubricant with Tackifier",
+    slug: "synthetic-food-grade-chain-lubricant-with-tackifier",
+    href: "/product/synthetic-food-grade-chain-lubricant-with-tackifier/",
+    image: "/images/product-chain-lubricant.webp",
+    descriptionHtml: "<p>Synthetic food-grade chain lubricant with tackifier for chain and conveyor applications. Contact Mid South Lubricants with the equipment, temperature range, and operating conditions for grade selection support.</p><p><b>Current labeled grades:</b> 22 and 68 in 5 gallon pails, plus Grade 22 in a 55 gallon drum.</p>",
+    shortDescriptionHtml: "<p>Synthetic food-grade chain lubricant with tackifier, with current labels for Grade 22 and Grade 68 package options.</p>",
+    categories: ["Chain Lubricant", "Food Grade"],
+    productCodes: ["MSL-2185SFGCLWT"],
+    features: ["Synthetic formulation", "Food-grade chain lubricant", "Tackified for chain and conveyor service", "Made in the USA"],
+    variations: labelsByProductCode.get("MSL-2185SFGCLWT").map((label) => ({
+      id: label.sku.toLowerCase(),
+      sku: label.sku,
+      option: label.option,
+      price: "Contact for pricing",
+      inStock: false,
+      purchasable: false,
+    })),
+    packageSkus: [],
+    labels: labelsByProductCode.get("MSL-2185SFGCLWT"),
+    priceRange: "Contact for pricing",
+    inStock: false,
+    purchasable: false,
+  },
+];
+
+export const products = [...archivedProducts, ...newProducts]
   .sort((a, b) => a.name.localeCompare(b.name));
+
+export const productLabels = products
+  .flatMap((product) => product.labels.map((label) => ({ ...label, productName: product.name })));
+
+export const skuDirectoryDocument = "/documents/Mid-South-product-SKU-directory.pdf";
 
 export const productCategories = [...new Set(products.flatMap((product) => product.categories))]
   .sort((a, b) => a.localeCompare(b));
