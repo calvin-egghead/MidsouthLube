@@ -376,7 +376,6 @@ function HomePage({ navigate }) {
       <section className="home-hero" aria-labelledby="home-title">
         <h1 id="home-title" className="sr-only">Premium Lubricants for Poultry Processing</h1>
         <picture className="home-hero__picture">
-          <source media="(max-width: 767px)" srcSet="/images/authentic/hero-poultry-brand-mobile.webp" />
           <img
             className="home-hero__background"
             src="/images/authentic/hero-poultry-brand.webp"
@@ -386,6 +385,24 @@ function HomePage({ navigate }) {
             fetchPriority="high"
           />
         </picture>
+        <div className="home-hero__mobile-content" aria-hidden="true">
+          <img
+            className="home-hero__mobile-logo"
+            src="/images/mid-south-logo.png"
+            alt=""
+            width="270"
+            height="270"
+          />
+          <div className="home-hero__mobile-message">
+            <p className="home-hero__mobile-title">
+              <span>Premium lubricants</span>
+              for poultry processing
+            </p>
+            <p className="home-hero__mobile-tagline">
+              Engineered for performance. Trusted in every plant.
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="proof-strip" aria-label="Mid South capabilities">

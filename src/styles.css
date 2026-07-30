@@ -2381,6 +2381,10 @@ textarea[aria-invalid="true"] {
   height: 100%;
 }
 
+.home-hero__mobile-content {
+  display: none;
+}
+
 @keyframes hero-photo-in {
   from { opacity: 0.72; transform: scale(1.035); }
   to { opacity: 1; transform: scale(1); }
@@ -2742,8 +2746,9 @@ textarea[aria-invalid="true"] {
 
 @media (max-width: 767px) {
   .home-hero {
-    min-height: 0;
-    aspect-ratio: 1 / 1;
+    min-height: 100svh;
+    min-height: 100dvh;
+    aspect-ratio: auto;
     padding: 0;
   }
 
@@ -2751,10 +2756,84 @@ textarea[aria-invalid="true"] {
     content: none;
   }
 
+  .home-hero__picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    background: #07152e;
+  }
+
+  .home-hero__picture::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(
+        to bottom,
+        rgba(3, 14, 34, 0.12) 0%,
+        rgba(3, 14, 34, 0.06) 38%,
+        rgba(3, 14, 34, 0.42) 68%,
+        rgba(3, 14, 34, 0.94) 100%
+      ),
+      linear-gradient(to right, rgba(3, 14, 34, 0.28), transparent 72%);
+  }
+
   .home-hero__background {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: 72% center;
+  }
+
+  .home-hero__mobile-content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: clamp(86px, 13svh, 112px) 22px 34px;
+    pointer-events: none;
+  }
+
+  .home-hero__mobile-logo {
+    width: clamp(108px, 29vw, 132px);
+    height: auto;
+    filter: drop-shadow(0 10px 24px rgba(2, 10, 26, 0.34));
+  }
+
+  .home-hero__mobile-message {
+    width: min(100%, 430px);
+    margin-top: auto;
+  }
+
+  .home-hero__mobile-title {
+    max-width: 355px;
+    margin: 0;
+    color: #f7faff;
+    font-size: clamp(38px, 10.8vw, 48px);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 0.97;
+    text-wrap: balance;
+    text-shadow: 0 4px 28px rgba(2, 10, 26, 0.42);
+  }
+
+  .home-hero__mobile-title span {
+    display: block;
+    color: #ed1c2b;
+  }
+
+  .home-hero__mobile-tagline {
+    max-width: 320px;
+    margin: 18px 0 0;
+    color: rgba(247, 250, 255, 0.82);
+    font-size: 15px;
+    font-weight: 560;
+    letter-spacing: 0.01em;
+    line-height: 1.45;
   }
 
   .home-hero__copy {
