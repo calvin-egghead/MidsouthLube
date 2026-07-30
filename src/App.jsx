@@ -121,9 +121,16 @@ function Link({ href, navigate, children, className, onClick, ...props }) {
   );
 }
 
-function Brand({ navigate, compact = false }) {
+function Brand({ navigate, compact = false, hidden = false }) {
   return (
-    <Link className={`brand ${compact ? "brand--compact" : ""}`} href="/" navigate={navigate} aria-label="Mid South Lubricants home">
+    <Link
+      className={`brand ${compact ? "brand--compact" : ""} ${hidden ? "brand--hero-hidden" : ""}`.trim()}
+      href="/"
+      navigate={navigate}
+      aria-label="Mid South Lubricants home"
+      aria-hidden={hidden || undefined}
+      tabIndex={hidden ? -1 : undefined}
+    >
       <img src="/images/mid-south-logo.png" alt="" width="54" height="54" />
       <span className="brand__name"><span>Mid South</span><span>Lubricants</span></span>
     </Link>
@@ -136,6 +143,7 @@ function ButtonLink({ href, navigate, children, variant = "primary", className =
 
 function Header({ navigate, currentPath }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [homeHeroVisible, setHomeHeroVisible] = useState(currentPath === "/");
   const nav = [
     ["Products", "/products/"],
     ["About Us", "/about-us/"],
@@ -145,6 +153,23 @@ function Header({ navigate, currentPath }) {
 
   useEffect(() => {
     setMenuOpen(false);
+  }, [currentPath]);
+
+  useEffect(() => {
+    if (currentPath !== "/") {
+      setHomeHeroVisible(false);
+      return undefined;
+    }
+
+    const hero = document.querySelector(".home-hero");
+    if (!hero) return undefined;
+
+    setHomeHeroVisible(true);
+    const observer = new IntersectionObserver(([entry]) => {
+      setHomeHeroVisible(entry.isIntersecting && entry.intersectionRatio > 0.32);
+    }, { threshold: [0, 0.32, 1] });
+    observer.observe(hero);
+    return () => observer.disconnect();
   }, [currentPath]);
 
   useEffect(() => {
@@ -163,9 +188,9 @@ function Header({ navigate, currentPath }) {
 
   return (
     <>
-      <header className={`site-header ${currentPath === "/" ? "site-header--overlay" : ""}`}>
+      <header className={`site-header ${currentPath === "/" ? `site-header--overlay ${homeHeroVisible ? "site-header--home-top" : "site-header--home-scrolled"}` : ""}`.trim()}>
         <div className="header-inner">
-          <Brand navigate={navigate} compact />
+          <Brand navigate={navigate} compact hidden={currentPath === "/" && homeHeroVisible} />
           <nav className="desktop-nav" aria-label="Primary navigation">
             {nav.map(([label, href]) => {
               const active = currentPath === href || (href === "/products/" && currentPath.startsWith("/product/"));
@@ -251,14 +276,20 @@ function Footer({ navigate }) {
   );
 }
 
-function PageHero({ title, copy, image }) {
+function PageHero({ title, copy, image, imageAlt = "", imageWidth = 1536, imageHeight = 1024 }) {
   return (
     <section className="page-hero">
       <div className="page-hero__copy" data-reveal>
         <h1>{title}</h1>
         <p>{copy}</p>
       </div>
-      {image ? <img src={image} alt="" width="1536" height="1024" fetchPriority="high" /> : null}
+      {image ? (
+        <div className="page-hero__media" data-reveal>
+          <div className="page-hero__media-core">
+            <img src={image} alt={imageAlt} width={imageWidth} height={imageHeight} fetchPriority="high" />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -343,22 +374,18 @@ function HomePage({ navigate }) {
   return (
     <>
       <section className="home-hero" aria-labelledby="home-title">
-        <img
-          className="home-hero__background"
-          src="/images/hero-facility.webp"
-          alt="Industrial processing equipment inside a production facility"
-          width="1536"
-          height="1024"
-          fetchPriority="high"
-        />
-        <div className="home-hero__copy" data-reveal>
-          <h1 id="home-title"><span>MidSouth Lubricants</span></h1>
-          <p>High-performance lubricants designed for food-grade compliance, industrial durability, and reduced downtime.</p>
-          <div className="button-row">
-            <ButtonLink href="#recommendation" navigate={navigate}>Request a Quote</ButtonLink>
-            <ButtonLink href="/products/" navigate={navigate} variant="text">View Products</ButtonLink>
-          </div>
-        </div>
+        <h1 id="home-title" className="sr-only">Premium Lubricants for Poultry Processing</h1>
+        <picture className="home-hero__picture">
+          <source media="(max-width: 767px)" srcSet="/images/authentic/hero-poultry-brand-mobile.webp" />
+          <img
+            className="home-hero__background"
+            src="/images/authentic/hero-poultry-brand.webp"
+            alt="Mid South Lubricants. Premium lubricants for poultry processing. Engineered for performance and trusted in every plant."
+            width="2560"
+            height="1440"
+            fetchPriority="high"
+          />
+        </picture>
       </section>
 
       <section className="proof-strip" aria-label="Mid South capabilities">
@@ -373,7 +400,7 @@ function HomePage({ navigate }) {
       <section className="section application-section" aria-labelledby="application-title">
         <div className="section-heading" data-reveal>
           <h2 id="application-title">Our Lubricants</h2>
-          <p>At Mid South Lube, we don’t do one-size-fits-all. Our products are built for performance in the real world—from food-grade grease for high-temp bearings to freezer-safe chain lubricants and fire-resistant hydraulic fluids.</p>
+          <p>At Mid South Lube, we don’t do one-size-fits-all. Our products are built for performance in the real world, from food-grade grease for high-temp bearings to freezer-safe chain lubricants and fire-resistant hydraulic fluids.</p>
         </div>
         <div className="application-browser">
           <div className="application-list" data-reveal>
@@ -420,7 +447,7 @@ function HomePage({ navigate }) {
 
       <section className="section about-preview" aria-labelledby="about-preview-title">
         <div className="about-preview__images" data-reveal>
-          <img src="/images/founders.webp" alt="Ray and Tracie Tatum, owners of Mid South Lubricants" width="1400" height="1050" loading="lazy" />
+          <img src="/images/authentic/ray-tracie-owners.webp" alt="Ray and Tracie Tatum, owners of Mid South Lubricants" width="1080" height="1395" loading="lazy" />
         </div>
         <div className="about-preview__copy" data-reveal>
           <h2 id="about-preview-title">The Best Team Around</h2>
@@ -585,31 +612,77 @@ function ProductPage({ product, navigate }) {
 function AboutPage({ navigate }) {
   return (
     <>
-      <PageHero title="About Mid South" copy="We provide innovative lubrication solutions tailored for the demands of modern manufacturing operations." image="/images/company/facility-wide.webp" />
+      <PageHero
+        title="About Mid South"
+        copy="We provide innovative lubrication solutions tailored for the demands of modern manufacturing operations."
+        image="/images/authentic/processing-conveyor-wide.webp"
+        imageAlt="A food-processing conveyor and production line"
+        imageWidth={904}
+        imageHeight={339}
+      />
       <section className="section story-section">
-        <div className="story-section__copy" data-reveal>
+        <div className="story-section__heading" data-reveal>
           <h2>Why We Started</h2>
+          <p>Built on field experience, direct support, and relationships that last.</p>
+        </div>
+        <div className="story-section__copy" data-reveal>
           <p>After decades of experience in the specialty lubricants industry, we saw an opportunity to do things differently. We wanted to create a company built not only on quality products, but also on trust, service, and relationships. For us, this business isn’t just about selling lubricants; it’s about solving problems, treating people right, and building something lasting for our family and community.</p>
           <p>Mid South Lubricants was founded with a simple vision: to combine Ray’s 30+ years of expertise with Tracie’s dedication to care and connection, creating a business that feels personal. We believe in working hard, listening to our customers, and growing a company we can one day pass down to the next generation.</p>
         </div>
-        <img src="/images/company/facility-detail.webp" alt="Mid South Lubricants facility and products" width="1536" height="1024" loading="lazy" data-reveal />
+        <div className="story-section__media" data-reveal>
+          <img src="/images/authentic/processing-conveyor-overview.webp" alt="Food-processing conveyors installed on a production floor" width="782" height="391" loading="lazy" />
+        </div>
       </section>
       <section className="leadership-section" aria-labelledby="leadership-title">
-        <div className="section-heading"><h2 id="leadership-title">Our Team</h2><p>Real people. Real expertise. Meet the folks who keep Mid South Lubricants running smoothly (so you can, too).</p></div>
-        <div className="leadership-grid">
-          <article data-reveal>
-            <img src="/images/company/ray-tatum.webp" alt="Ray Tatum" width="575" height="816" loading="lazy" />
-            <div><h3>Ray Tatum</h3><p>Co-Owner, CEO</p><p>Ray Tatum is the Owner and CEO of Mid South Lubricants. Born and raised in Winnsboro, Louisiana, Ray has spent more than 30 years in the industry. He got his start in the mid-90s as a safety engineer at ConAgra in Farmerville, later moving into plant management and eventually into capital sales—a role he’s excelled in for the past 25 years.</p><p>Ray holds a Bachelor of Science in Aviation from Louisiana Tech University, with a minor in Industrial Safety &amp; Technology from LSU. What drives him every day is simple: great customer service. He loves nothing more than meeting with customers, finding solutions to their challenges, and ensuring they feel supported. When he’s not working, Ray can usually be found fishing at the family camp in south Louisiana or spending time with loved ones. His goal is clear: to build a thriving, trusted business that continues to grow for years to come.</p></div>
+        <div className="leadership-intro" data-reveal>
+          <h2 id="leadership-title">Owner-led. Customer close.</h2>
+          <p>Ray and Tracie pair deep industry experience with the kind of direct, personal support that shaped Mid South from the beginning.</p>
+        </div>
+        <div className="leadership-list">
+          <article className="leader-profile leader-profile--ray">
+            <div className="leader-profile__media" data-reveal>
+              <div className="leader-profile__portrait">
+                <img src="/images/company/ray-tatum.webp" alt="Ray Tatum" width="575" height="816" loading="lazy" />
+              </div>
+            </div>
+            <div className="leader-profile__copy" data-reveal>
+              <p className="leader-profile__role">Co-Owner, CEO</p>
+              <h3>Ray Tatum</h3>
+              <p>Born and raised in Winnsboro, Louisiana, Ray has spent more than 30 years in the industry. He started as a safety engineer at ConAgra in Farmerville, moved into plant management, and built a 25-year career in capital sales.</p>
+              <p>Ray holds a Bachelor of Science in Aviation from Louisiana Tech University, with a minor in Industrial Safety &amp; Technology from LSU. He is driven by practical problem solving, strong customer service, and the goal of building a trusted business for the next generation.</p>
+              <dl className="leader-profile__facts">
+                <div><dt>Experience</dt><dd>30+ years</dd></div>
+                <div><dt>Focus</dt><dd>Technical solutions and customer support</dd></div>
+              </dl>
+            </div>
           </article>
-          <article data-reveal>
-            <img src="/images/company/tracie-tatum.webp" alt="Tracie Tatum" width="1179" height="1171" loading="lazy" />
-            <div><h3>Tracie Tatum</h3><p>Co-Owner, CFO</p><p>Tracie Tatum is the Co-Owner and CFO of Mid South Lubricants. Originally from Del Mar, California, Tracie describes herself as fun, loyal, and hardworking. For more than 30 years, she’s supported her husband Ray in the business world while also building her own career as a nurse with an associate’s degree in nursing.</p><p>What she loves most about her role is connecting with people—meeting customers, listening to their stories, and helping build a company rooted in genuine relationships. Outside of work, you’ll find Tracie fishing at the family camp, traveling whenever she gets the chance, or spending time with her family. Though she jokes that no one should hear her sing, she’s happiest when life is full of laughter, good company, and purpose. Her long-term vision is to grow Mid South Lubricants into something the family can be proud to pass down.</p></div>
+          <article className="leader-profile leader-profile--tracie">
+            <div className="leader-profile__media" data-reveal>
+              <div className="leader-profile__portrait">
+                <img src="/images/company/tracie-tatum.webp" alt="Tracie Tatum" width="1179" height="1171" loading="lazy" />
+              </div>
+            </div>
+            <div className="leader-profile__copy" data-reveal>
+              <p className="leader-profile__role">Co-Owner, CFO</p>
+              <h3>Tracie Tatum</h3>
+              <p>Originally from Del Mar, California, Tracie is the Co-Owner and CFO of Mid South Lubricants. Alongside more than 30 years supporting Ray in business, she built her own career as a nurse and brings that same sense of care to the company.</p>
+              <p>Tracie focuses on customer relationships, careful listening, and building a company rooted in genuine connection. Her long-term vision is to grow Mid South into a business the family can be proud to pass down.</p>
+              <dl className="leader-profile__facts">
+                <div><dt>Background</dt><dd>Nursing and business operations</dd></div>
+                <div><dt>Focus</dt><dd>Relationships and financial stewardship</dd></div>
+              </dl>
+            </div>
           </article>
         </div>
       </section>
       <section className="section principles-section" aria-labelledby="principles-title">
         <div><h2 id="principles-title">What to Expect</h2><p>Technical knowledge matters most when it turns into clear, useful support.</p></div>
-        <div className="principles-grid"><article><h3>Listen First</h3><p>Start with the equipment, conditions, and operating problem.</p></article><article><h3>Match the Application</h3><p>Consider temperature, load, service interval, and compliance needs.</p></article><article><h3>Stay Accessible</h3><p>Provide direct communication from quote through product selection.</p></article><article><h3>Think Long-Term</h3><p>Focus on relationships, reliability, and practical results.</p></article></div>
+        <div className="principles-list">
+          <article><h3>Listen First</h3><p>Start with the equipment, conditions, and operating problem.</p></article>
+          <article><h3>Match the Application</h3><p>Consider temperature, load, service interval, and compliance needs.</p></article>
+          <article><h3>Stay Accessible</h3><p>Provide direct communication from quote through product selection.</p></article>
+          <article><h3>Think Long-Term</h3><p>Focus on relationships, reliability, and practical results.</p></article>
+        </div>
       </section>
       <QuoteBand navigate={navigate} />
     </>
@@ -619,7 +692,14 @@ function AboutPage({ navigate }) {
 function FaqPage({ navigate }) {
   return (
     <>
-      <PageHero title="FAQs" copy="Discover answers to your most pressing questions about our lubrication solutions and products." image="/images/application-compressor.webp" />
+      <PageHero
+        title="FAQs"
+        copy="Discover answers to your most pressing questions about our lubrication solutions and products."
+        image="/images/authentic/poultry-processing-line.webp"
+        imageAlt="Poultry moving through an automated processing line"
+        imageWidth={678}
+        imageHeight={451}
+      />
       <section className="section faq-section">
         <div className="faq-list">
           {faqs.map((faq, index) => (
@@ -685,7 +765,14 @@ function ContactForm() {
 function ContactPage() {
   return (
     <>
-      <PageHero title="Contact Mid South" copy="Reach out to us for any inquiries or support regarding our lubrication solutions." image="/images/cta-bearing.webp" />
+      <PageHero
+        title="Contact Mid South"
+        copy="Reach out to us for any inquiries or support regarding our lubrication solutions."
+        image="/images/authentic/poultry-line-closeup.webp"
+        imageAlt="Poultry processing equipment in operation"
+        imageWidth={678}
+        imageHeight={451}
+      />
       <section className="contact-layout section">
         <div className="contact-details" data-reveal>
           <h2>Get in Touch</h2>
@@ -709,7 +796,14 @@ function ResourcesPage({ navigate }) {
   ];
   return (
     <>
-      <PageHero title="Resources" copy="Download the current product SKU directory and production-ready labels supplied by Mid South Lubricants." image="/images/company/processing-line.jpg" />
+      <PageHero
+        title="Resources"
+        copy="Download the current product SKU directory and production-ready labels supplied by Mid South Lubricants."
+        image="/images/authentic/processing-conveyor-overview.webp"
+        imageAlt="A food-processing conveyor system on the production floor"
+        imageWidth={782}
+        imageHeight={391}
+      />
       <section className="section resources-section">
         <div className="resources-intro">
           <h2>Current SKU Directory</h2>

@@ -256,25 +256,25 @@ export const applications = [
   {
     name: "Food-grade greases",
     copy: "Greases for bearings and processing equipment where incidental food contact requirements matter.",
-    image: "/images/application-food.webp",
+    image: "/images/authentic/poultry-line-closeup.webp",
     category: "Grease",
   },
   {
     name: "Compressor and hydraulic fluids",
     copy: "Long-life fluids for compressors, hydraulic systems, and demanding industrial service.",
-    image: "/images/application-compressor.webp",
+    image: "/images/authentic/processing-conveyor-overview.webp",
     category: "Compressor Fluid",
   },
   {
     name: "Low-temperature and refrigeration",
     copy: "Chain lubricants and compressor oils for freezers and ammonia refrigeration systems.",
-    image: "/images/application-cold.webp",
+    image: "/images/authentic/poultry-processing-line.webp",
     category: "Low Temperature",
   },
   {
     name: "Heat-transfer fluids",
     copy: "Food-grade thermal fluids designed for clean operation across demanding temperature ranges.",
-    image: "/images/application-heat.webp",
+    image: "/images/authentic/processing-conveyor-wide.webp",
     category: "Heat Transfer Fluid",
   },
 ];
