@@ -1,5 +1,5 @@
-import productRecords from "../../old-site-archive/raw/products-store.json";
-import variationRecords from "../../old-site-archive/raw/product-variations.json";
+import productRecords from "./generated/products.json";
+import variationRecords from "./generated/variations.json";
 
 const variationById = new Map(variationRecords.map((variation) => [variation.id, variation]));
 
@@ -77,6 +77,26 @@ const productCodeOverridesBySlug = new Map([
   ["caldera-5-high-flash-food-grade-heat-transfer-fluid", ["MSL-C5HFFGHTF"]],
 ]);
 
+const documentFilesByProductCode = new Map([]);
+
+const documentsFor = (productCodes) => {
+  const files = productCodes.map((code) => documentFilesByProductCode.get(code)).find(Boolean) || {};
+  return [
+    {
+      type: "TDS",
+      title: "Technical Data Sheet",
+      description: "Product properties, performance data, and recommended applications.",
+      href: files.tds || null,
+    },
+    {
+      type: "SDS",
+      title: "Safety Data Sheet",
+      description: "Safety, handling, storage, and emergency information.",
+      href: files.sds || null,
+    },
+  ];
+};
+
 const packageSkusFor = (productCodes) => {
   const prefix = productCodes.map((code) => skuFamilyPrefixes.get(code)).find(Boolean);
   if (!prefix) return [];
@@ -91,35 +111,6 @@ export const normalizeDashes = (value = "") => value
   .replace(/&(?:mdash|ndash);|&#(?:8211|8212);/gi, "-");
 
 export const normalizeHtml = (value = "") => normalizeDashes(value);
-
-export const formatMoney = (prices, key = "price") => {
-  if (!prices || prices[key] === null || prices[key] === undefined || prices[key] === "") {
-    return "Contact for pricing";
-  }
-
-  const divisor = 10 ** (prices.currency_minor_unit ?? 2);
-  const amount = Number(prices[key]) / divisor;
-
-  if (amount === 0.01) return "Confirm price";
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: prices.currency_code || "USD",
-  }).format(amount);
-};
-
-const priceRange = (product) => {
-  const prices = product.prices || {};
-  const range = prices.price_range;
-
-  if (!range) return formatMoney(prices);
-
-  if (range.min_amount === "1") return "Contact for pricing";
-
-  const minimum = formatMoney({ ...prices, price: range.min_amount });
-  const maximum = formatMoney({ ...prices, price: range.max_amount });
-  return minimum === maximum ? minimum : `${minimum} - ${maximum}`;
-};
 
 const localImage = (source, slug) => {
   if (slug === "synthetic-high-temperature-silica-gel-grease") {
@@ -145,7 +136,6 @@ const archivedProducts = productRecords
         id: summary.id,
         sku: detail.sku || "Not assigned",
         option: normalizeDashes(option.replace(/^Available Options:\s*/i, "")),
-        price: formatMoney(detail.prices),
         inStock: Boolean(detail.is_in_stock),
         purchasable: Boolean(detail.is_purchasable),
       };
@@ -169,7 +159,7 @@ const archivedProducts = productRecords
       variations,
       packageSkus: packageSkusFor(productCodes),
       labels,
-      priceRange: priceRange(product),
+      documents: documentsFor(productCodes),
       inStock: Boolean(product.is_in_stock),
       purchasable: Boolean(product.is_purchasable),
     };
@@ -192,14 +182,13 @@ const newProducts = [
         id: "msl-2090bo-20-55d",
         sku: "MSL-2090BO-20-55D",
         option: "Grade 20 - 55 Gallon Drum",
-        price: "Contact for pricing",
         inStock: false,
         purchasable: false,
       },
     ],
     packageSkus: [],
     labels: labelsByProductCode.get("MSL-2090BO"),
-    priceRange: "Contact for pricing",
+    documents: documentsFor(["MSL-2090BO"]),
     inStock: false,
     purchasable: false,
   },
@@ -218,13 +207,12 @@ const newProducts = [
       id: label.sku.toLowerCase(),
       sku: label.sku,
       option: label.option,
-      price: "Contact for pricing",
       inStock: false,
       purchasable: false,
     })),
     packageSkus: [],
     labels: labelsByProductCode.get("MSL-2185SFGCLWT"),
-    priceRange: "Contact for pricing",
+    documents: documentsFor(["MSL-2185SFGCLWT"]),
     inStock: false,
     purchasable: false,
   },

@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "generate:data": "node scripts/build_public_product_data.mjs",
+    "predev": "npm run generate:data",
     "dev": "vite",
+    "prebuild": "npm run generate:data",
     "build": "vite build",
     "preview": "vite preview"
   },

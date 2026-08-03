@@ -11,8 +11,8 @@ import {
 } from "./data/siteData";
 
 const contactEmail = "info@midsouthlube.com";
-const contactPhone = "(844) 770-LUBE (5823)";
-const contactPhoneHref = "tel:+18447705823";
+const contactPhone = "(318) 614-7948";
+const contactPhoneHref = "tel:+13186147948";
 const contactAddress = "1122 Garland Gin Road, Downsville, LA 71234";
 
 const routeMeta = {
@@ -304,7 +304,6 @@ function ProductCard({ product, navigate }) {
         <h3>{product.name}</h3>
         <p>{plainText(product.shortDescriptionHtml).split("Additional Information:")[0]}</p>
         <div className="product-card__footer">
-          <span>{product.priceRange}</span>
           <strong>View Product</strong>
         </div>
       </div>
@@ -552,7 +551,6 @@ function ProductPage({ product, navigate }) {
             <h1>{product.name}</h1>
             {product.productCodes.length ? <p className="product-code">Product code: {product.productCodes.join(", ")}</p> : null}
             <div className="rich-text rich-text--lead" dangerouslySetInnerHTML={{ __html: product.shortDescriptionHtml.split(/<h3/i)[0] }} />
-            <div className="product-price"><span>Catalog range</span><strong>{product.priceRange}</strong></div>
             <div className="button-row">
               <ButtonLink href={`/contact-us/?product=${encodeURIComponent(product.name)}#quote`} navigate={navigate}>Request a Quote</ButtonLink>
               <a className="button button--secondary" href={contactPhoneHref}>Call {contactPhone}</a>
@@ -568,6 +566,33 @@ function ProductPage({ product, navigate }) {
           <div className="product-features" data-reveal>
             <h2>Key features</h2>
             {product.features.length ? <ul>{product.features.map((feature) => <li key={feature}>{feature}</li>)}</ul> : <p>Contact Mid South for application details and current technical documentation.</p>}
+          </div>
+        </section>
+
+        <section id="documents" className="section product-documents" aria-labelledby="product-documents-title">
+          <div className="section-heading">
+            <h2 id="product-documents-title">Technical &amp; safety documents</h2>
+            <p>Download the manufacturer’s current Technical Data Sheet (TDS) and Safety Data Sheet (SDS) when available.</p>
+          </div>
+          <div className="document-download-grid">
+            {product.documents.map((document) => (
+              <article key={document.type}>
+                <span className="document-type">{document.type}</span>
+                <h3>{document.title}</h3>
+                <p>{document.description}</p>
+                {document.href ? (
+                  <a className="button button--secondary" href={document.href} download>Download {document.type} PDF</a>
+                ) : (
+                  <ButtonLink
+                    href={`/contact-us/?product=${encodeURIComponent(product.name)}&document=${document.type}#quote`}
+                    navigate={navigate}
+                    variant="secondary"
+                  >
+                    Request {document.type} PDF
+                  </ButtonLink>
+                )}
+              </article>
+            ))}
           </div>
         </section>
 
@@ -605,15 +630,15 @@ function ProductPage({ product, navigate }) {
 
         {product.variations.length ? <section className="section options-section" aria-labelledby="options-title">
           <div className="section-heading">
-            <h2 id="options-title">{product.packageSkus.length ? "Grade and price references" : "Available options"}</h2>
-            <p>{product.packageSkus.length ? "Grade-specific options and prices retained from the prior web catalog. Confirm current pricing and availability when requesting a quote." : "Pricing and availability should be confirmed when requesting a quote."}</p>
+            <h2 id="options-title">Available options</h2>
+            <p>Confirm the required grade, package size, and availability when requesting a quote.</p>
           </div>
           <p className="table-scroll-hint">Swipe horizontally to view all option details.</p>
-          <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} grade and price references`}>
+          <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} available options`}>
               <table className="variation-table">
-                <thead><tr><th>Option</th><th>SKU</th><th>Catalog price</th><th>Availability</th></tr></thead>
+                <thead><tr><th>Option</th><th>SKU</th><th>Availability</th></tr></thead>
                 <tbody>{product.variations.map((variation) => (
-                  <tr key={variation.id}><td>{variation.option}</td><td><code>{variation.sku}</code></td><td>{variation.price}</td><td>{variation.inStock ? "Available" : "Ask for availability"}</td></tr>
+                  <tr key={variation.id}><td>{variation.option}</td><td><code>{variation.sku}</code></td><td>{variation.inStock ? "Available" : "Ask for availability"}</td></tr>
                 ))}</tbody>
               </table>
           </div>
@@ -733,7 +758,9 @@ function FaqPage({ navigate }) {
 }
 
 function ContactForm() {
-  const productName = new URLSearchParams(window.location.search).get("product") || "";
+  const searchParams = new URLSearchParams(window.location.search);
+  const productName = searchParams.get("product") || "";
+  const documentType = searchParams.get("document") || "";
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -756,7 +783,9 @@ function ContactForm() {
       "",
       data.get("needs"),
     ];
-    const subject = productName ? `Quote request: ${productName}` : "Lubricant quote request";
+    const subject = documentType && productName
+      ? `${documentType} request: ${productName}`
+      : productName ? `Quote request: ${productName}` : "Lubricant quote request";
     setSubmitted(true);
     window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
   };
@@ -772,7 +801,7 @@ function ContactForm() {
         <label><span>Phone</span><input name="phone" type="tel" autoComplete="tel" /></label>
         <label><span>Product category</span><select name="category" defaultValue="Food-grade"><option>Food-grade</option><option>Industrial</option><option>Refrigeration</option><option>Other</option></select></label>
         <label><span>Lubricant type</span><select name="type" defaultValue="Hydraulic"><option>Air Compressor</option><option>Automotive</option><option>Blower</option><option>Centrifugal</option><option>Chain & Conveyor</option><option>Gear Box</option><option>Heat Transfer</option><option>Hydraulic</option><option>Vacuum</option><option>Other</option></select></label>
-        <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={productName ? `I would like information and pricing for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
+        <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={documentType && productName ? `Please send me the current ${documentType} PDF for ${productName}.` : productName ? `I would like information and availability for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
       </div>
       <button className="button button--primary" type="submit">Prepare Email</button>
     </form>
@@ -809,7 +838,7 @@ function ResourcesPage({ navigate }) {
     ["Food-grade registrations", "Request H1, HT-1, and other product-specific registration details."],
     ["Product specifications", "Ask for current viscosity, temperature, compatibility, and performance information."],
     ["Application support", "Share an existing specification or operating problem for product-selection help."],
-    ["Packaging and availability", "Confirm grades, package sizes, stock, and current catalog pricing."],
+    ["Packaging and availability", "Confirm grades, package sizes, and current stock."],
   ];
   return (
     <>
