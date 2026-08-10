@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import "@fontsource-variable/ibm-plex-sans";
 import "./styles.css";
 import App from "./App";
+import { initializeAnalytics } from "./analytics";
+
+initializeAnalytics();
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

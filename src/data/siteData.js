@@ -77,7 +77,44 @@ const productCodeOverridesBySlug = new Map([
   ["caldera-5-high-flash-food-grade-heat-transfer-fluid", ["MSL-C5HFFGHTF"]],
 ]);
 
-const documentFilesByProductCode = new Map([]);
+const documentFilesByProductCode = new Map([
+  ["MSL-C3FGHTF", { tds: "/documents/tds/MSL-C3-technical-data-sheet.pdf" }],
+  ["MSL-C5HFFGHTF", { tds: "/documents/tds/MSL-C5-technical-data-sheet.pdf" }],
+  ["MSL-NXT717", { tds: "/documents/tds/MSL-NXT-717-technical-data-sheet.pdf" }],
+]);
+
+export const technicalDataSheets = [
+  {
+    productName: "MSL-C3 Food-Grade Heat Transfer Fluid",
+    productCode: "MSL-C3",
+    href: "/documents/tds/MSL-C3-technical-data-sheet.pdf",
+  },
+  {
+    productName: "MSL-C5 High-Flash Food-Grade Heat Transfer Fluid",
+    productCode: "MSL-C5",
+    href: "/documents/tds/MSL-C5-technical-data-sheet.pdf",
+  },
+  {
+    productName: "MSL-C13 Heat Transfer Oil",
+    productCode: "MSL-C13",
+    href: "/documents/tds/MSL-C13-technical-data-sheet.pdf",
+  },
+  {
+    productName: "MSL-NXT 717 Premium Ammonia Refrigeration Compressor Oil",
+    productCode: "MSL-NXT 717",
+    href: "/documents/tds/MSL-NXT-717-technical-data-sheet.pdf",
+  },
+  {
+    productName: "MSL-Rescue HTF HD Heavy-Duty Heat Transfer Cleaner Concentrate",
+    productCode: "MSL-Rescue HTF HD",
+    href: "/documents/tds/MSL-Rescue-HTF-HD-technical-data-sheet.pdf",
+  },
+  {
+    productName: "SNFG Series Synthetic Food-Grade Oils",
+    productCode: "SNFG Series",
+    href: "/documents/tds/SNFG-series-technical-data-sheet.pdf",
+  },
+];
 
 const documentsFor = (productCodes) => {
   const files = productCodes.map((code) => documentFilesByProductCode.get(code)).find(Boolean) || {};

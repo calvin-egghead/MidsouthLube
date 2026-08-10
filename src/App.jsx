@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { trackEvent, trackPageView } from "./analytics";
 import {
   applications,
   faqs,
@@ -8,12 +9,15 @@ import {
   productLabels,
   products,
   skuDirectoryDocument,
+  technicalDataSheets,
 } from "./data/siteData";
 
 const contactEmail = "info@midsouthlube.com";
 const contactPhone = "(318) 614-7948";
 const contactPhoneHref = "tel:+13186147948";
 const contactAddress = "1122 Garland Gin Road, Downsville, LA 71234";
+const siteUrl = "https://midsouthlube.com";
+const socialImage = `${siteUrl}/images/authentic/hero-poultry-brand.webp`;
 
 const routeMeta = {
   "/": [
@@ -41,7 +45,7 @@ const routeMeta = {
     "Request product specifications, registration details, and technical documents from Mid South Lubricants.",
   ],
   "/privacy-policy/": ["Privacy Policy | Mid South Lubricants", "Privacy information for the Mid South Lubricants website."],
-  "/terms/": ["Terms | Mid South Lubricants", "Website terms for Mid South Lubricants."],
+  "/terms/": ["Website Terms | Mid South Lubricants", "Review the terms governing use of the Mid South Lubricants website and product information."],
 };
 
 const normalizePath = (pathname) => {
@@ -55,6 +59,84 @@ const plainText = (value = "") => {
   const element = document.createElement("textarea");
   element.innerHTML = withoutTags;
   return normalizeDashes(element.value).replace(/\s+/g, " ").replace(/\(\s+/g, "(").trim();
+};
+
+const setMetaContent = (selector, content) => {
+  document.querySelector(selector)?.setAttribute("content", content);
+};
+
+const setStructuredData = (data) => {
+  let script = document.querySelector("#structured-data");
+  if (!script) {
+    script = document.createElement("script");
+    script.id = "structured-data";
+    script.type = "application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(data);
+};
+
+const organizationData = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Mid South Lubricants",
+  url: siteUrl,
+  logo: `${siteUrl}/images/mid-south-logo.webp`,
+  email: contactEmail,
+  telephone: "+1-318-614-7948",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "1122 Garland Gin Road",
+    addressLocality: "Downsville",
+    addressRegion: "LA",
+    postalCode: "71234",
+    addressCountry: "US",
+  },
+};
+
+const updateSeo = ({ path, product, title, description, isNotFound = false }) => {
+  const canonicalPath = product ? product.href : path;
+  const canonicalUrl = new URL(canonicalPath, siteUrl).href;
+  const image = product ? new URL(product.image, siteUrl).href : socialImage;
+  const type = product ? "product" : "website";
+
+  document.title = title;
+  setMetaContent('meta[name="description"]', description);
+  setMetaContent('meta[name="robots"]', isNotFound ? "noindex, follow" : "index, follow, max-image-preview:large");
+  setMetaContent('meta[property="og:title"]', title);
+  setMetaContent('meta[property="og:description"]', description);
+  setMetaContent('meta[property="og:type"]', type);
+  setMetaContent('meta[property="og:url"]', canonicalUrl);
+  setMetaContent('meta[property="og:image"]', image);
+  setMetaContent('meta[name="twitter:title"]', title);
+  setMetaContent('meta[name="twitter:description"]', description);
+  setMetaContent('meta[name="twitter:image"]', image);
+  document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonicalUrl);
+
+  if (product) {
+    setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description,
+      image,
+      url: canonicalUrl,
+      sku: product.productCodes[0] || undefined,
+      brand: { "@type": "Brand", name: "Mid South Lubricants" },
+    });
+  } else if (path === "/faqs/") {
+    setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    });
+  } else {
+    setStructuredData(organizationData);
+  }
 };
 
 function useRoute() {
@@ -131,7 +213,7 @@ function Brand({ navigate, compact = false, hidden = false }) {
       aria-hidden={hidden || undefined}
       tabIndex={hidden ? -1 : undefined}
     >
-      <img src="/images/mid-south-logo.png" alt="" width="54" height="54" />
+      <img src="/images/mid-south-logo.webp" alt="" width="54" height="54" />
       <span className="brand__name"><span>Mid South</span><span>Lubricants</span></span>
     </Link>
   );
@@ -144,6 +226,7 @@ function ButtonLink({ href, navigate, children, variant = "primary", className =
 function Header({ navigate, currentPath }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [homeHeroVisible, setHomeHeroVisible] = useState(currentPath === "/");
+  const showHomeHero = currentPath === "/" && homeHeroVisible;
   const nav = [
     ["Products", "/products/"],
     ["About Us", "/about-us/"],
@@ -152,19 +235,11 @@ function Header({ navigate, currentPath }) {
   ];
 
   useEffect(() => {
-    setMenuOpen(false);
-  }, [currentPath]);
-
-  useEffect(() => {
-    if (currentPath !== "/") {
-      setHomeHeroVisible(false);
-      return undefined;
-    }
+    if (currentPath !== "/") return undefined;
 
     const hero = document.querySelector(".home-hero");
     if (!hero) return undefined;
 
-    setHomeHeroVisible(true);
     const observer = new IntersectionObserver(([entry]) => {
       setHomeHeroVisible(entry.isIntersecting && entry.intersectionRatio > 0.32);
     }, { threshold: [0, 0.32, 1] });
@@ -188,9 +263,9 @@ function Header({ navigate, currentPath }) {
 
   return (
     <>
-      <header className={`site-header ${currentPath === "/" ? `site-header--overlay ${homeHeroVisible ? "site-header--home-top" : "site-header--home-scrolled"}` : ""}`.trim()}>
+      <header className={`site-header ${currentPath === "/" ? `site-header--overlay ${showHomeHero ? "site-header--home-top" : "site-header--home-scrolled"}` : ""}`.trim()}>
         <div className="header-inner">
-          <Brand navigate={navigate} compact hidden={currentPath === "/" && homeHeroVisible} />
+          <Brand navigate={navigate} compact hidden={showHomeHero} />
           <nav className="desktop-nav" aria-label="Primary navigation">
             {nav.map(([label, href]) => {
               const active = currentPath === href || (href === "/products/" && currentPath.startsWith("/product/"));
@@ -333,6 +408,7 @@ function HomeLeadForm() {
       data.get("needs"),
     ];
     setSubmitted(true);
+    trackEvent("form_prepare_email", { form_name: "home_recommendation" });
     window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent("Application recommendation request")}&body=${encodeURIComponent(lines.join("\n"))}`;
   };
 
@@ -375,6 +451,7 @@ function HomePage({ navigate }) {
       <section className="home-hero" aria-labelledby="home-title">
         <h1 id="home-title" className="sr-only">Premium Lubricants for Poultry Processing</h1>
         <picture className="home-hero__picture">
+          <source media="(max-width: 767px)" srcSet="/images/authentic/hero-poultry-brand-mobile.webp" type="image/webp" />
           <img
             className="home-hero__background"
             src="/images/authentic/hero-poultry-brand.webp"
@@ -387,10 +464,11 @@ function HomePage({ navigate }) {
         <div className="home-hero__mobile-content" aria-hidden="true">
           <img
             className="home-hero__mobile-logo"
-            src="/images/mid-south-logo.png"
+            src="/images/mid-south-logo.webp"
             alt=""
             width="270"
             height="270"
+            fetchPriority="high"
           />
           <div className="home-hero__mobile-message">
             <p className="home-hero__mobile-title">
@@ -445,7 +523,7 @@ function HomePage({ navigate }) {
       <section className="featured-products-home" aria-labelledby="featured-title">
         <div className="featured-products-home__intro" data-reveal>
           <h2 id="featured-title">Top-Grade Products</h2>
-          <p>From high-temp greases to freezer-safe lubricants, our products are engineered to meet the strict demands of food and industrial operations. Every product is tested for safety, stability, and long-term performance.</p>
+          <p>From high-temperature greases to freezer-safe lubricants, our catalog covers the demanding needs of food-processing and industrial operations.</p>
           <ButtonLink href="/products/" navigate={navigate} variant="text">View Products</ButtonLink>
         </div>
         <div className="featured-products-home__grid">
@@ -787,6 +865,7 @@ function ContactForm() {
       ? `${documentType} request: ${productName}`
       : productName ? `Quote request: ${productName}` : "Lubricant quote request";
     setSubmitted(true);
+    trackEvent("form_prepare_email", { form_name: "quote_request", product_name: productName || undefined, document_type: documentType || undefined });
     window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
   };
 
@@ -852,6 +931,20 @@ function ResourcesPage({ navigate }) {
       />
       <section className="section resources-section">
         <div className="resources-intro">
+          <h2>Technical data sheets</h2>
+          <p>Current product properties, performance data, and recommended applications supplied by Mid South Lubricants and its manufacturing partners.</p>
+        </div>
+        <div className="resource-grid label-resource-grid">
+          {technicalDataSheets.map((document) => (
+            <article key={document.href}>
+              <span className="resource-kicker">Technical Data Sheet</span>
+              <h3>{document.productName}</h3>
+              <p>{document.productCode}</p>
+              <a className="button button--text" href={document.href} download>Download TDS PDF</a>
+            </article>
+          ))}
+        </div>
+        <div className="resources-intro">
           <h2>Current SKU Directory</h2>
           <p>Package-level SKU references for the Mid South product lineup, including 1 gallon pails, 5 gallon pails, 55 gallon drums, and 275 gallon totes.</p>
           <a className="button button--primary" href={skuDirectoryDocument} download>Download SKU Directory</a>
@@ -881,11 +974,37 @@ function ResourcesPage({ navigate }) {
 
 function LegalPage({ type }) {
   const isPrivacy = type === "privacy";
+  const sections = isPrivacy ? [
+    ["Information you provide", <><p>When you contact us by phone or email, you may provide your name, email address, phone number, company, and details about your equipment or lubricant needs.</p><p>The website currently prepares an email in your device's email application. The website does not transmit or store that message before you choose to send it.</p></>],
+    ["Information collected automatically", <p>Our web host may process standard technical information such as IP address, browser type, requested pages, timestamps, and security logs. We may enable privacy-conscious website analytics to understand aggregate traffic and actions such as document downloads or phone-link clicks.</p>],
+    ["How we use information", <p>We use information to respond to inquiries, recommend products, prepare quotes, provide requested documents, maintain website security, understand site performance, and comply with legal obligations.</p>],
+    ["Sharing", <p>We do not sell personal information. We may share information with service providers that support hosting, email, security, or analytics, and when required by law or necessary to protect our rights.</p>],
+    ["Retention and security", <p>We retain correspondence only as long as reasonably necessary for customer service, business records, and legal obligations. No transmission or storage system can be guaranteed completely secure.</p>],
+    ["Your choices", <p>You may contact us to request access to, correction of, or deletion of personal information we maintain, subject to applicable legal and recordkeeping requirements. Browser settings can limit cookies and similar technologies.</p>],
+    ["Children's privacy", <p>This business website is not directed to children under 13, and we do not knowingly collect personal information from children.</p>],
+    ["Policy changes", <p>We may update this policy as the website and our practices change. The effective date below identifies the latest revision.</p>],
+  ] : [
+    ["Website purpose", <p>This website provides general information about Mid South Lubricants, its products, and related services. Website content is not a substitute for equipment-manufacturer instructions, a current Technical Data Sheet, a current Safety Data Sheet, or application-specific technical advice.</p>],
+    ["Product information", <p>Product descriptions, grades, packaging, availability, registrations, and specifications may change. Confirm all requirements with Mid South Lubricants before ordering or using a product. Images may represent a product family rather than the exact grade or package supplied.</p>],
+    ["Safety and compliance", <p>Users are responsible for reviewing current safety documentation, confirming material compatibility, following equipment instructions, and determining whether a product is suitable for the intended application. Food-grade or other regulatory requirements must be confirmed for the specific product and use.</p>],
+    ["Quotes and orders", <p>Website inquiries are requests for information only. They do not create an order or binding agreement. Pricing, freight, taxes, payment terms, availability, and delivery are subject to a written quote or order confirmation from Mid South Lubricants.</p>],
+    ["Intellectual property", <p>The website design, text, graphics, logo, product information, and other materials are owned by or licensed to Mid South Lubricants and may not be reproduced or used commercially without permission.</p>],
+    ["Third-party materials", <p>Linked documents, registrations, standards, and third-party names remain subject to their owners' terms. We are not responsible for third-party websites or materials.</p>],
+    ["Disclaimer and limitation", <p>The website is provided on an as-available basis without warranties concerning uninterrupted access or complete accuracy. To the extent permitted by law, Mid South Lubricants is not liable for indirect or consequential losses arising from use of this website.</p>],
+    ["Governing law", <p>These terms are governed by the laws of the State of Louisiana, without regard to conflict-of-law principles. If any provision is unenforceable, the remaining provisions continue in effect.</p>],
+    ["Changes", <p>We may update these terms as the website or our business practices change. Continued use after an update constitutes acceptance of the revised terms.</p>],
+  ];
   return (
     <section className="legal-page section">
       <h1>{isPrivacy ? "Privacy Policy" : "Website Terms"}</h1>
-      <p className="legal-intro">The prior website contained unreviewed WordPress sample language. A finalized {isPrivacy ? "privacy policy" : "terms document"} should be supplied by Mid South Lubricants before publication.</p>
-      <div className="legal-notice"><h2>Questions</h2><p>For questions about this website or information submitted through the quote form, contact <a href={`mailto:${contactEmail}`}>{contactEmail}</a> or call <a href={contactPhoneHref}>{contactPhone}</a>.</p></div>
+      <p className="legal-effective">Effective August 10, 2026</p>
+      <p className="legal-intro">{isPrivacy
+        ? "This policy explains how Mid South Lubricants handles information associated with this website and direct business inquiries."
+        : "These terms govern use of the Mid South Lubricants website. By using the site, you agree to these terms."}</p>
+      <div className="legal-sections">
+        {sections.map(([heading, content]) => <section key={heading}><h2>{heading}</h2>{content}</section>)}
+      </div>
+      <div className="legal-notice"><h2>Contact us</h2><p>Questions about {isPrivacy ? "this policy or personal information" : "these terms"} may be sent to <a href={`mailto:${contactEmail}`}>{contactEmail}</a>, discussed by phone at <a href={contactPhoneHref}>{contactPhone}</a>, or mailed to {contactAddress}.</p></div>
     </section>
   );
 }
@@ -905,12 +1024,28 @@ function App() {
   const product = productMatch ? products.find((item) => item.slug === productMatch[1]) : null;
 
   useEffect(() => {
+    const isNotFound = !product && !routeMeta[path];
     const [title, description] = product
       ? [`${product.name} | Mid South Lubricants`, plainText(product.shortDescriptionHtml).slice(0, 155)]
       : routeMeta[path] || ["Page Not Found | Mid South Lubricants", "Browse Mid South Lubricants products and company information."];
-    document.title = title;
-    document.querySelector('meta[name="description"]')?.setAttribute("content", description);
-  }, [path, product]);
+    updateSeo({ path, product, title, description, isNotFound });
+    trackPageView(`${path}${search}`);
+  }, [path, product, search]);
+
+  useEffect(() => {
+    const trackDocumentClick = (event) => {
+      const link = event.target.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href") || "";
+      if (href.startsWith("tel:")) trackEvent("phone_click", { link_url: href });
+      else if (href.startsWith("mailto:")) trackEvent("email_click", { link_url: href });
+      else if (link.hasAttribute("download") || /\.pdf(?:$|\?)/i.test(href)) {
+        trackEvent("document_download", { file_url: href, link_text: link.textContent.trim() });
+      }
+    };
+    document.addEventListener("click", trackDocumentClick);
+    return () => document.removeEventListener("click", trackDocumentClick);
+  }, []);
 
   useEffect(() => {
     if (!window.location.hash) return undefined;
@@ -953,7 +1088,7 @@ function App() {
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <Header navigate={navigate} currentPath={path} />
+      <Header key={path} navigate={navigate} currentPath={path} />
       <main id="main-content">{page}</main>
       <Footer navigate={navigate} />
     </div>

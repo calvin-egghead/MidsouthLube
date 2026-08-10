@@ -1,0 +1,2 @@
+# Fallback for unmatched client-side routes on Netlify and Cloudflare Pages.
+/* /index.html 200
