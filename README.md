@@ -31,7 +31,7 @@ To enable Google Tag Manager, copy `.env.example` to `.env.local` and set `VITE_
 
 ## Technical documents
 
-The repository includes the supplied SKU directory and product-label PDFs. It does not contain manufacturer TDS or SDS files. Add approved PDFs under `public/documents/` and map them in `documentFilesByProductCode` in `src/data/siteData.js`. Never create or infer regulated safety documentation from marketing copy.
+The public catalog is limited to the six products with approved Technical Data Sheets under `public/documents/tds/`. Each product-to-document mapping lives in `src/data/siteData.js`. Safety Data Sheets are requested from Mid South and must never be created or inferred from marketing copy.
 
 ## Before publication
 

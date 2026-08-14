@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { products } from "../src/data/siteData.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = resolve(projectRoot, "dist");
@@ -40,7 +41,13 @@ for (const file of htmlFiles) {
 
 const sitemap = await readFile(resolve(distRoot, "sitemap.xml"), "utf8");
 const indexedRoutes = (sitemap.match(/<loc>/g) || []).length;
-if (indexedRoutes < 20) failures.push(`sitemap.xml contains only ${indexedRoutes} routes`);
+const expectedIndexedRoutes = 8 + products.length;
+if (indexedRoutes !== expectedIndexedRoutes) failures.push(`sitemap.xml contains ${indexedRoutes} routes; expected ${expectedIndexedRoutes}`);
+if (products.length !== 6) failures.push(`public catalog contains ${products.length} products; expected 6`);
+for (const product of products) {
+  const tds = product.documents.find((document) => document.type === "TDS" && document.href);
+  if (!tds) failures.push(`${product.slug}: missing Technical Data Sheet`);
+}
 
 const appSource = await readFile(resolve(projectRoot, "src/App.jsx"), "utf8");
 if (/[—–]/.test(appSource)) failures.push("src/App.jsx contains a forbidden long dash character");

@@ -6,9 +6,7 @@ import {
   featuredProducts,
   normalizeDashes,
   productCategories,
-  productLabels,
   products,
-  skuDirectoryDocument,
   technicalDataSheets,
 } from "./data/siteData";
 
@@ -26,7 +24,7 @@ const routeMeta = {
   ],
   "/products/": [
     "Product Catalog | Mid South Lubricants",
-    "Browse hydraulic fluids, compressor oils, heat-transfer fluids, freezer lubricants, chain lubricants, and greases.",
+    "Browse six documented heat-transfer, refrigeration, and synthetic food-grade oil products from Mid South Lubricants.",
   ],
   "/about-us/": [
     "About Mid South Lubricants",
@@ -321,9 +319,9 @@ function Footer({ navigate }) {
         <div>
           <h2>Products</h2>
           <Link href="/products/?category=Food%20Grade" navigate={navigate}>Food-grade</Link>
-          <Link href="/products/?category=Hydraulic%20Fluid" navigate={navigate}>Hydraulic fluids</Link>
-          <Link href="/products/?category=Compressor%20Fluid" navigate={navigate}>Compressor fluids</Link>
+          <Link href="/products/?category=Compressor%20Fluid" navigate={navigate}>Compressor oils</Link>
           <Link href="/products/?category=Heat%20Transfer%20Fluid" navigate={navigate}>Heat-transfer fluids</Link>
+          <Link href="/products/?category=Cleaner" navigate={navigate}>System cleaner</Link>
         </div>
         <div>
           <h2>Company</h2>
@@ -335,9 +333,9 @@ function Footer({ navigate }) {
         <div>
           <h2>Applications</h2>
           <Link href="/products/?category=Low%20Temperature" navigate={navigate}>Low-temperature</Link>
-          <Link href="/products/?category=Refrigeration%20Lubricant" navigate={navigate}>Refrigeration</Link>
-          <Link href="/products/?category=Fire%20Resistant" navigate={navigate}>Fire-resistant</Link>
-          <Link href="/products/?category=Grease" navigate={navigate}>Greases</Link>
+          <Link href="/products/?category=Ammonia%20Refrigeration" navigate={navigate}>Ammonia refrigeration</Link>
+          <Link href="/products/?category=Gear%20Oil" navigate={navigate}>Gear units</Link>
+          <Link href="/products/?category=Hydraulic%20Fluid" navigate={navigate}>Hydraulic systems</Link>
         </div>
       </div>
       <div className="footer-bottom">
@@ -373,7 +371,7 @@ function ProductCard({ product, navigate }) {
   return (
     <Link className="product-card" href={product.href} navigate={navigate} data-reveal>
       <div className="product-card__image">
-        <img src={product.image} alt={`${product.name} container`} width="504" height="634" loading="lazy" />
+        <img src={product.image} alt={`${product.name} product`} width="504" height="634" loading="lazy" />
       </div>
       <div className="product-card__body">
         <h3>{product.name}</h3>
@@ -451,11 +449,11 @@ function HomePage({ navigate }) {
       <section className="home-hero" aria-labelledby="home-title">
         <h1 id="home-title" className="sr-only">Premium Lubricants for Poultry Processing</h1>
         <picture className="home-hero__picture">
-          <source media="(max-width: 767px)" srcSet="/images/authentic/hero-poultry-brand-mobile.webp" type="image/webp" />
+          <source media="(max-width: 767px)" srcSet="/images/company/processing-line.jpg" type="image/jpeg" />
           <img
             className="home-hero__background"
             src="/images/authentic/hero-poultry-brand.webp"
-            alt="Mid South Lubricants. Premium lubricants for poultry processing. Engineered for performance and trusted in every plant."
+            alt=""
             width="2560"
             height="1440"
             fetchPriority="high"
@@ -484,7 +482,7 @@ function HomePage({ navigate }) {
 
       <section className="proof-strip" aria-label="Mid South capabilities">
         <div className="proof-grid">
-          <div><strong>Boost Efficiency</strong><span>Advanced greases and fluids keep machines running longer</span></div>
+          <div><strong>Boost Efficiency</strong><span>Advanced oils and fluids keep critical systems running longer</span></div>
           <div><strong>Cut Costs</strong><span>Fewer breakdowns, less maintenance, better margins</span></div>
           <div><strong>Built to Last</strong><span>Engineered for extreme heat, cold, and pressure</span></div>
           <div><strong>30+ Years</strong><span>Specialty lubricant industry experience</span></div>
@@ -494,7 +492,7 @@ function HomePage({ navigate }) {
       <section className="section application-section" aria-labelledby="application-title">
         <div className="section-heading" data-reveal>
           <h2 id="application-title">Our Lubricants</h2>
-          <p>At Mid South Lube, we don’t do one-size-fits-all. Our products are built for performance in the real world, from food-grade grease for high-temp bearings to freezer-safe chain lubricants and fire-resistant hydraulic fluids.</p>
+          <p>Our focused catalog covers heat transfer systems, ammonia refrigeration, and food-processing equipment, with a current Technical Data Sheet for every product.</p>
         </div>
         <div className="application-browser">
           <div className="application-list" data-reveal>
@@ -523,14 +521,14 @@ function HomePage({ navigate }) {
       <section className="featured-products-home" aria-labelledby="featured-title">
         <div className="featured-products-home__intro" data-reveal>
           <h2 id="featured-title">Top-Grade Products</h2>
-          <p>From high-temperature greases to freezer-safe lubricants, our catalog covers the demanding needs of food-processing and industrial operations.</p>
+          <p>Explore six documented products for heat transfer, refrigeration, food-processing, hydraulic, compressor, and gear applications.</p>
           <ButtonLink href="/products/" navigate={navigate} variant="text">View Products</ButtonLink>
         </div>
         <div className="featured-products-home__grid">
           {featuredProducts.slice(0, 3).map((product) => (
             <Link className="product-showcase" href={product.href} navigate={navigate} key={product.id} data-reveal>
               <div className="product-showcase__image">
-                <img src={product.image} alt={`${product.name} container`} width="504" height="634" loading="lazy" />
+                <img src={product.image} alt={`${product.name} product`} width="504" height="634" loading="lazy" />
               </div>
               <h3>{product.name}</h3>
               <span>View Product</span>
@@ -580,7 +578,7 @@ function ProductCatalog({ navigate }) {
 
   return (
     <>
-      <PageHero title="Our Products" copy="Explore our innovative lubrication solutions designed to enhance efficiency and performance in your operations." image="/images/products-group.webp" />
+      <PageHero title="Our Products" copy="Six specialty products for heat transfer, refrigeration, and food-processing equipment, each supported by a current Technical Data Sheet." image="/images/products-group.webp" />
       <section className="catalog section" aria-labelledby="catalog-results-title">
         <div className="catalog-controls" data-reveal>
           <div className="search-field">
@@ -624,7 +622,7 @@ function ProductPage({ product, navigate }) {
           <Link href="/" navigate={navigate}>Home</Link><span>/</span><Link href="/products/" navigate={navigate}>Products</Link><span>/</span><span aria-current="page">{product.name}</span>
         </div>
         <section className="product-hero">
-          <div className="product-hero__image" data-reveal><img src={product.image} alt={`${product.name} container`} width="504" height="634" fetchPriority="high" /></div>
+          <div className="product-hero__image" data-reveal><img src={product.image} alt={`${product.name} product`} width="504" height="634" fetchPriority="high" /></div>
           <div className="product-hero__copy" data-reveal>
             <h1>{product.name}</h1>
             {product.productCodes.length ? <p className="product-code">Product code: {product.productCodes.join(", ")}</p> : null}
@@ -879,7 +877,7 @@ function ContactForm() {
         <label><span>Email *</span><input name="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} />{errors.email ? <small id="email-error" className="field-error">{errors.email}</small> : null}</label>
         <label><span>Phone</span><input name="phone" type="tel" autoComplete="tel" /></label>
         <label><span>Product category</span><select name="category" defaultValue="Food-grade"><option>Food-grade</option><option>Industrial</option><option>Refrigeration</option><option>Other</option></select></label>
-        <label><span>Lubricant type</span><select name="type" defaultValue="Hydraulic"><option>Air Compressor</option><option>Automotive</option><option>Blower</option><option>Centrifugal</option><option>Chain & Conveyor</option><option>Gear Box</option><option>Heat Transfer</option><option>Hydraulic</option><option>Vacuum</option><option>Other</option></select></label>
+        <label><span>Product type</span><select name="type" defaultValue="Heat Transfer"><option>Heat Transfer</option><option>Ammonia Refrigeration</option><option>Compressor Oil</option><option>Food-Grade Oil</option><option>Gear Oil</option><option>Hydraulic Oil</option><option>System Cleaner</option><option>Other</option></select></label>
         <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={documentType && productName ? `Please send me the current ${documentType} PDF for ${productName}.` : productName ? `I would like information and availability for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
       </div>
       <button className="button button--primary" type="submit">Prepare Email</button>
@@ -923,7 +921,7 @@ function ResourcesPage({ navigate }) {
     <>
       <PageHero
         title="Resources"
-        copy="Download the current product SKU directory and production-ready labels supplied by Mid South Lubricants."
+        copy="Download the Technical Data Sheet for every product in the current Mid South Lubricants catalog."
         image="/images/authentic/processing-conveyor-overview.webp"
         imageAlt="A food-processing conveyor system on the production floor"
         imageWidth={782}
@@ -941,21 +939,6 @@ function ResourcesPage({ navigate }) {
               <h3>{document.productName}</h3>
               <p>{document.productCode}</p>
               <a className="button button--text" href={document.href} download>Download TDS PDF</a>
-            </article>
-          ))}
-        </div>
-        <div className="resources-intro">
-          <h2>Current SKU Directory</h2>
-          <p>Package-level SKU references for the Mid South product lineup, including 1 gallon pails, 5 gallon pails, 55 gallon drums, and 275 gallon totes.</p>
-          <a className="button button--primary" href={skuDirectoryDocument} download>Download SKU Directory</a>
-        </div>
-        <div className="resource-grid label-resource-grid">
-          {productLabels.map((label) => (
-            <article key={label.href}>
-              <span className="resource-kicker">{label.productName}</span>
-              <h3>{label.sku}</h3>
-              <p>{label.option}</p>
-              <a className="button button--text" href={label.href} download>Download PDF Label</a>
             </article>
           ))}
         </div>

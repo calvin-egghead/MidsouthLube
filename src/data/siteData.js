@@ -1,88 +1,3 @@
-import productRecords from "./generated/products.json";
-import variationRecords from "./generated/variations.json";
-
-const variationById = new Map(variationRecords.map((variation) => [variation.id, variation]));
-
-const packageSizes = [
-  ["1 Gallon Pail", "1P"],
-  ["5 Gallon Pail", "5P"],
-  ["55 Gallon Drum", "55D"],
-  ["275 Gallon Tote", "275T"],
-];
-
-const skuFamilyPrefixes = new Map([
-  ["MSL-2284SBAWHF", "MSL-2284SBAWHF"],
-  ["MSL-2288SFGAWHF", "MSL-2288SFGAWHF"],
-  ["MSL-2584SFRHF", "MSL-2584SFRHF"],
-  ["MSL-4584SFRGHF", "MSL-4584FRFGHF"],
-  ["MSL-C3FGHTF", "MSL-C3FGHTF"],
-  ["MSL-C5HFFGHTF", "MSL-C5HFFGHTF"],
-  ["MSL-C12FGLTHTF", "MSL-C12FGLTHTF"],
-  ["MSL-6488LTSSFL", "MSL-6488LTSSFL"],
-  ["MSL-6831SFGLTCL", "MSL-6831SFGLTCL"],
-  ["MSL-NXT717", "MSL-NXT717"],
-  ["MSL-6061FGCF6", "MSL-6061FGCF6"],
-  ["MSL-2015SCF8", "MSL-2015SCF8"],
-  ["MSL-6321UCF10", "MSL-6321UCF10"],
-  ["MSL-3045SHTSGG", "MSL-3045SHTSGG"],
-  ["MSL-2087SFGEPACG", "MSL-2087SFGEPACG"],
-  ["MSL-3157SFGEPCSG", "MSL-3157SFGEPCSG"],
-]);
-
-const labelsByProductCode = new Map([
-  ["MSL-2090BO", [
-    {
-      sku: "MSL-2090BO-20-55D",
-      option: "Grade 20 - 55 Gallon Drum",
-      href: "/documents/labels/MSL-2090BO-20-55D-drum-label.pdf",
-    },
-  ]],
-  ["MSL-2185SFGCLWT", [
-    {
-      sku: "MSL-2185-22",
-      option: "Grade 22 - 5 Gallon Pail",
-      href: "/documents/labels/MSL-2185-22-pail-label.pdf",
-    },
-    {
-      sku: "MSL-2185SFGCLWT-22-55D",
-      option: "Grade 22 - 55 Gallon Drum",
-      href: "/documents/labels/MSL-2185SFGCLWT-22-55D-drum-label.pdf",
-    },
-    {
-      sku: "MSL-2185SFGCLWT-68-5P",
-      option: "Grade 68 - 5 Gallon Pail",
-      href: "/documents/labels/MSL-2185SFGCLWT-68-5P-pail-label.pdf",
-    },
-  ]],
-  ["MSL-2288SFGAWHF", [
-    {
-      sku: "MSL-2288SFGAWHF-46-275T",
-      option: "ISO 46 - 275 Gallon Tote",
-      href: "/documents/labels/MSL-2288SFGAWHF-46-275T-tote-label.pdf",
-    },
-    {
-      sku: "MSL-2288SFGAWHF-68-55D",
-      option: "ISO 68 - 55 Gallon Drum",
-      href: "/documents/labels/MSL-2288SFGAWHF-68-55D-drum-label.pdf",
-    },
-    {
-      sku: "MSL-2288SFGAWHF-68-275T",
-      option: "ISO 68 - 275 Gallon Tote",
-      href: "/documents/labels/MSL-2288SFGAWHF-68-275T-tote-label.pdf",
-    },
-  ]],
-]);
-
-const productCodeOverridesBySlug = new Map([
-  ["caldera-5-high-flash-food-grade-heat-transfer-fluid", ["MSL-C5HFFGHTF"]],
-]);
-
-const documentFilesByProductCode = new Map([
-  ["MSL-C3FGHTF", { tds: "/documents/tds/MSL-C3-technical-data-sheet.pdf" }],
-  ["MSL-C5HFFGHTF", { tds: "/documents/tds/MSL-C5-technical-data-sheet.pdf" }],
-  ["MSL-NXT717", { tds: "/documents/tds/MSL-NXT-717-technical-data-sheet.pdf" }],
-]);
-
 export const technicalDataSheets = [
   {
     productName: "MSL-C3 Food-Grade Heat Transfer Fluid",
@@ -116,31 +31,21 @@ export const technicalDataSheets = [
   },
 ];
 
-const documentsFor = (productCodes) => {
-  const files = productCodes.map((code) => documentFilesByProductCode.get(code)).find(Boolean) || {};
+const documentsFor = (tds) => {
   return [
     {
       type: "TDS",
       title: "Technical Data Sheet",
       description: "Product properties, performance data, and recommended applications.",
-      href: files.tds || null,
+      href: tds,
     },
     {
       type: "SDS",
       title: "Safety Data Sheet",
       description: "Safety, handling, storage, and emergency information.",
-      href: files.sds || null,
+      href: null,
     },
   ];
-};
-
-const packageSkusFor = (productCodes) => {
-  const prefix = productCodes.map((code) => skuFamilyPrefixes.get(code)).find(Boolean);
-  if (!prefix) return [];
-  return packageSizes.map(([packaging, suffix]) => ({
-    packaging,
-    sku: `${prefix}-${suffix}`,
-  }));
 };
 
 export const normalizeDashes = (value = "") => value
@@ -148,129 +53,103 @@ export const normalizeDashes = (value = "") => value
   .replace(/&(?:mdash|ndash);|&#(?:8211|8212);/gi, "-");
 
 export const normalizeHtml = (value = "") => normalizeDashes(value);
-
-const localImage = (source, slug) => {
-  if (slug === "synthetic-high-temperature-silica-gel-grease") {
-    return "/images/catalog/Synthetic-High-Temperature-Silica-Gel-Grease_.webp";
-  }
-  if (!source) return "/images/products-group.webp";
-  return `/images/catalog/${source.split("/").pop()}`;
+const productDefaults = {
+  variations: [],
+  packageSkus: [],
+  labels: [],
+  inStock: false,
+  purchasable: false,
 };
 
-const archivedProducts = productRecords
-  .map((product) => {
-    const optionAttribute = product.attributes.find((attribute) => attribute.has_variations);
-    const featureAttributes = product.attributes
-      .filter((attribute) => !attribute.has_variations)
-      .flatMap((attribute) => attribute.terms.map((term) => normalizeDashes(term.name)));
-    const fallbackOptions = optionAttribute?.terms.map((term) => normalizeDashes(term.name)) || [];
-    const variations = product.variations.map((summary, index) => {
-      const detail = variationById.get(summary.id) || {};
-      const summaryValue = summary.attributes.find((attribute) => attribute.value)?.value;
-      const option = summaryValue || detail.variation || fallbackOptions[index] || "Option details on request";
+const product = ({ tds, ...details }) => ({
+  ...productDefaults,
+  ...details,
+  href: `/product/${details.slug}/`,
+  documents: documentsFor(tds),
+});
 
-      return {
-        id: summary.id,
-        sku: detail.sku || "Not assigned",
-        option: normalizeDashes(option.replace(/^Available Options:\s*/i, "")),
-        inStock: Boolean(detail.is_in_stock),
-        purchasable: Boolean(detail.is_purchasable),
-      };
-    });
-
-    const productCodes = productCodeOverridesBySlug.get(product.slug)
-      || product.tags.map((tag) => normalizeDashes(tag.name));
-    const labels = productCodes.flatMap((code) => labelsByProductCode.get(code) || []);
-
-    return {
-      id: product.id,
-      name: normalizeDashes(product.name),
-      slug: product.slug,
-      href: `/product/${product.slug}/`,
-      image: localImage(product.images[0]?.src, product.slug),
-      descriptionHtml: normalizeHtml(product.description),
-      shortDescriptionHtml: normalizeHtml(product.short_description),
-      categories: product.categories.map((category) => normalizeDashes(category.name)),
-      productCodes,
-      features: featureAttributes,
-      variations,
-      packageSkus: packageSkusFor(productCodes),
-      labels,
-      documents: documentsFor(productCodes),
-      inStock: Boolean(product.is_in_stock),
-      purchasable: Boolean(product.is_purchasable),
-    };
-  });
-
-const newProducts = [
-  {
-    id: "new-2090",
-    name: "Food Grade White Oil",
-    slug: "food-grade-white-oil",
-    href: "/product/food-grade-white-oil/",
+export const products = [
+  product({
+    id: "msl-c3",
+    name: "MSL-C3 Food-Grade Heat Transfer Fluid",
+    slug: "msl-c3-food-grade-heat-transfer-fluid",
+    image: "/images/catalog/Caldera-3-Food-Grade-Heat-Transfer-Fluid-sm.webp",
+    tds: "/documents/tds/MSL-C3-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>An HT-1 food-grade heat transfer fluid rated for applications with bulk temperatures up to 621°F (327°C).</p>",
+    descriptionHtml: "<p>MSL-C3 uses highly pure base stocks free from the impurities and aromatic compounds common in many heat transfer fluids. It is formulated for clean operation, efficient thermal transfer, and long fluid life.</p><p><b>Operating range:</b> minimum temperature 32°F (0°C), maximum bulk temperature 621°F (327°C), and maximum film temperature 669°F (354°C).</p>",
+    categories: ["Food Grade", "Heat Transfer Fluid"],
+    productCodes: ["MSL-C3"],
+    features: ["NSF HT-1 registered", "Supports clean operation and efficient thermal transfer", "Minimal odor"],
+  }),
+  product({
+    id: "msl-c5",
+    name: "MSL-C5 High-Flash Food-Grade Heat Transfer Fluid",
+    slug: "msl-c5-high-flash-food-grade-heat-transfer-fluid",
+    image: "/images/catalog/Caldera-5-High-Flash-Food-Grade-Heat-Transfer-Fluid-sm.webp",
+    tds: "/documents/tds/MSL-C5-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>A high-flash food-grade heat transfer fluid for open and closed systems operating at very high temperatures.</p>",
+    descriptionHtml: "<p>MSL-C5 combines pure base fluids with advanced additives to resist oxidation and fluid degradation. The formulation is designed for long service life in high-temperature systems with or without inert gas blanketing.</p><p><b>Operating range:</b> minimum temperature 59°F (15°C) and maximum bulk temperature 644°F (340°C).</p>",
+    categories: ["Food Grade", "Heat Transfer Fluid"],
+    productCodes: ["MSL-C5"],
+    features: ["Suitable for incidental food-contact applications", "High flash point for added safety", "Resists fluid degradation", "Low varnishing tendency", "Low volatility"],
+  }),
+  product({
+    id: "msl-c13",
+    name: "MSL-C13 Heat Transfer Oil",
+    slug: "msl-c13-heat-transfer-oil",
     image: "/images/products-group.webp",
-    descriptionHtml: "<p>Food-grade white oil supplied by Mid South Lubricants for food-processing and related applications. Contact our team with the equipment, operating conditions, and required grade for selection support.</p><p><b>Current labeled option:</b> Grade 20 in a 55 gallon drum.</p>",
-    shortDescriptionHtml: "<p>Food-grade white oil available in a Grade 20, 55 gallon drum configuration.</p>",
-    categories: ["Food Grade", "White Oil"],
-    productCodes: ["MSL-2090BO"],
-    features: ["Food-grade formulation", "Made in the USA", "55 gallon drum label available"],
-    variations: [
-      {
-        id: "msl-2090bo-20-55d",
-        sku: "MSL-2090BO-20-55D",
-        option: "Grade 20 - 55 Gallon Drum",
-        inStock: false,
-        purchasable: false,
-      },
-    ],
-    packageSkus: [],
-    labels: labelsByProductCode.get("MSL-2090BO"),
-    documents: documentsFor(["MSL-2090BO"]),
-    inStock: false,
-    purchasable: false,
-  },
-  {
-    id: "new-2185",
-    name: "Synthetic Food Grade Chain Lubricant with Tackifier",
-    slug: "synthetic-food-grade-chain-lubricant-with-tackifier",
-    href: "/product/synthetic-food-grade-chain-lubricant-with-tackifier/",
-    image: "/images/product-chain-lubricant.webp",
-    descriptionHtml: "<p>Synthetic food-grade chain lubricant with tackifier for chain and conveyor applications. Contact Mid South Lubricants with the equipment, temperature range, and operating conditions for grade selection support.</p><p><b>Current labeled grades:</b> 22 and 68 in 5 gallon pails, plus Grade 22 in a 55 gallon drum.</p>",
-    shortDescriptionHtml: "<p>Synthetic food-grade chain lubricant with tackifier, with current labels for Grade 22 and Grade 68 package options.</p>",
-    categories: ["Chain Lubricant", "Food Grade"],
-    productCodes: ["MSL-2185SFGCLWT"],
-    features: ["Synthetic formulation", "Food-grade chain lubricant", "Tackified for chain and conveyor service", "Made in the USA"],
-    variations: labelsByProductCode.get("MSL-2185SFGCLWT").map((label) => ({
-      id: label.sku.toLowerCase(),
-      sku: label.sku,
-      option: label.option,
-      inStock: false,
-      purchasable: false,
-    })),
-    packageSkus: [],
-    labels: labelsByProductCode.get("MSL-2185SFGCLWT"),
-    documents: documentsFor(["MSL-2185SFGCLWT"]),
-    inStock: false,
-    purchasable: false,
-  },
+    tds: "/documents/tds/MSL-C13-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>A non-toxic, non-hazardous heat transfer oil designed for applications operating at temperatures up to 600°F.</p>",
+    descriptionHtml: "<p>MSL-C13 is a cost-conscious heat transfer oil for systems that require an environmentally friendly fluid. It is available in Grades 20 and 40.</p><p>The formulation provides thermal and oxidative stability with low volatility, low vapor pressure, and deposit control that helps keep heat transfer systems clean.</p>",
+    categories: ["Heat Transfer Fluid", "Industrial"],
+    productCodes: ["MSL-C13"],
+    features: ["Excellent thermal and oxidative stability", "Very low volatility and vapor pressure", "Deposit control for system cleanliness", "Environmentally friendly", "Non-toxic and non-hazardous"],
+  }),
+  product({
+    id: "msl-nxt-717",
+    name: "MSL-NXT 717 Premium Ammonia Refrigeration Compressor Oil",
+    slug: "msl-nxt-717-ammonia-refrigeration-compressor-oil",
+    image: "/images/catalog/Premium-Ammonia-Refigeration-Compressor-Oil-sm.webp",
+    tds: "/documents/tds/MSL-NXT-717-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>A hydrocracked ammonia refrigeration lubricant with low oil carryover and strong pumpability in extreme cold.</p>",
+    descriptionHtml: "<p>MSL-NXT 717 is a next-generation, two-stage hydrocracked ammonia refrigeration compressor oil. Its reduced ammonia solubility limits viscosity dilution and oil carryover while supporting pumpability at evaporator temperatures down to -45°C.</p><p>The Grade 68 formulation is top-off compatible with most normal paraffinics, naphthenics, alkylbenzenes, PAOs, and single-stage hydrocracked products.</p>",
+    categories: ["Ammonia Refrigeration", "Compressor Fluid", "Low Temperature", "Refrigeration Lubricant"],
+    productCodes: ["MSL-NXT 717"],
+    features: ["Formulated for ammonia refrigeration systems", "Low oil carryover", "Long fluid life", "Reduced lubricant use", "Lower ammonia solubility", "Pumpable at evaporator temperatures down to -45°C", "Compatible with many competitive fluids without flushing"],
+  }),
+  product({
+    id: "msl-rescue-htf-hd",
+    name: "MSL-Rescue HTF HD Heavy-Duty Heat Transfer Cleaner Concentrate",
+    slug: "msl-rescue-htf-hd-heat-transfer-cleaner-concentrate",
+    image: "/images/cta-bearing.webp",
+    tds: "/documents/tds/MSL-Rescue-HTF-HD-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>A fast-acting concentrated cleaner for removing carbon, varnish, and hydrocarbon deposits from heat transfer systems.</p>",
+    descriptionHtml: "<p>MSL-Rescue HTF HD is added to existing heat transfer fluid so the system can be cleaned while it remains in operation. Maintaining system cleanliness helps prevent efficiency losses caused by fouling.</p><p><b>Recommended concentration:</b> 10% cleaner to heat transfer fluid. Heavily fouled systems may require a concentration of up to 20%.</p>",
+    categories: ["Cleaner", "Heat Transfer Fluid", "Industrial"],
+    productCodes: ["MSL-Rescue HTF HD"],
+    features: ["Designed for heavily fouled systems", "Cleans while the system remains in operation", "Typically cleans the system within 48 hours"],
+  }),
+  product({
+    id: "snfg-series",
+    name: "SNFG Series Synthetic Food-Grade Oils",
+    slug: "snfg-series-synthetic-food-grade-oils",
+    image: "/images/product-hydraulic-fluid.webp",
+    tds: "/documents/tds/SNFG-series-technical-data-sheet.pdf",
+    shortDescriptionHtml: "<p>PAO synthetic food-grade oils for pumps, gear units, compressors, mixers, saws, hydraulic units, and air-line systems.</p>",
+    descriptionHtml: "<p>The SNFG Series combines PAO synthetic base oils with NSF-approved additives for thermal stability, oxidation resistance, anti-wear performance, and extreme-pressure protection in food-processing equipment.</p><p><b>Available grades:</b> SNFG 22, 32, 46, 68, 100, 150, 220, 320, 460, and 680. The series is intended for meat and poultry packing plants, beverage plants, canneries, bakeries, food packaging, and other industrial food-processing operations.</p>",
+    categories: ["Compressor Fluid", "Food Grade", "Gear Oil", "Hydraulic Fluid"],
+    productCodes: ["SNFG Series"],
+    features: ["Extreme-pressure and anti-wear protection", "Wide operating-temperature range", "Efficient water separation", "Low toxicity", "High oxidation resistance", "Formulated in compliance with 21 CFR 178.3570"],
+  }),
 ];
-
-export const products = [...archivedProducts, ...newProducts]
-  .sort((a, b) => a.name.localeCompare(b.name));
-
-export const productLabels = products
-  .flatMap((product) => product.labels.map((label) => ({ ...label, productName: product.name })));
-
-export const skuDirectoryDocument = "/documents/Mid-South-product-SKU-directory.pdf";
 
 export const productCategories = [...new Set(products.flatMap((product) => product.categories))]
   .sort((a, b) => a.localeCompare(b));
 
 export const featuredProductSlugs = [
-  "synthetic-food-grade-ep-calcium-sulfonate-grease",
-  "premium-ammonia-refrigeration-compressor-oil",
-  "synthetic-food-grade-low-temperature-chain-lubricant",
-  "synthetic-biodegradable-hydraulic-fluid",
+  "msl-c3-food-grade-heat-transfer-fluid",
+  "msl-nxt-717-ammonia-refrigeration-compressor-oil",
+  "snfg-series-synthetic-food-grade-oils",
 ];
 
 export const featuredProducts = featuredProductSlugs
@@ -279,26 +158,26 @@ export const featuredProducts = featuredProductSlugs
 
 export const applications = [
   {
-    name: "Food-grade greases",
-    copy: "Greases for bearings and processing equipment where incidental food contact requirements matter.",
+    name: "Food-grade oils",
+    copy: "Food-grade heat transfer and synthetic oils for demanding food-processing equipment.",
     image: "/images/authentic/poultry-line-closeup.webp",
-    category: "Grease",
+    category: "Food Grade",
   },
   {
-    name: "Compressor and hydraulic fluids",
-    copy: "Long-life fluids for compressors, hydraulic systems, and demanding industrial service.",
+    name: "Synthetic equipment oils",
+    copy: "PAO oils for compressors, hydraulic units, pumps, gear units, mixers, and saws.",
     image: "/images/authentic/processing-conveyor-overview.webp",
     category: "Compressor Fluid",
   },
   {
-    name: "Low-temperature and refrigeration",
-    copy: "Chain lubricants and compressor oils for freezers and ammonia refrigeration systems.",
+    name: "Ammonia refrigeration",
+    copy: "Low-carryover compressor oil for reliable pumpability in extremely cold refrigeration service.",
     image: "/images/authentic/poultry-processing-line.webp",
-    category: "Low Temperature",
+    category: "Ammonia Refrigeration",
   },
   {
-    name: "Heat-transfer fluids",
-    copy: "Food-grade thermal fluids designed for clean operation across demanding temperature ranges.",
+    name: "Heat transfer systems",
+    copy: "Thermal fluids and a concentrated cleaner for high-temperature system performance.",
     image: "/images/authentic/processing-conveyor-wide.webp",
     category: "Heat Transfer Fluid",
   },
@@ -319,7 +198,7 @@ export const faqs = [
   },
   {
     question: "What products do you offer?",
-    answer: "We offer a range of lubrication products tailored for various applications. Our solutions include oils, greases, and specialty lubricants. Each product is designed to meet specific operational needs.",
+    answer: "Our current catalog includes food-grade and industrial heat transfer fluids, ammonia refrigeration compressor oil, synthetic food-grade oils, and a heat transfer system cleaner. Each listed product includes a Technical Data Sheet.",
   },
   {
     question: "How do I choose the right lubricant?",

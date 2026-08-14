@@ -2,15 +2,21 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
+import { products, technicalDataSheets } from "../src/data/siteData.js";
 
 const root = resolve(import.meta.dirname, "..");
-const products = JSON.parse(await readFile(resolve(root, "src/data/generated/products.json"), "utf8"));
 const siteData = await readFile(resolve(root, "src/data/siteData.js"), "utf8");
 const app = await readFile(resolve(root, "src/App.jsx"), "utf8");
 
-test("archived product slugs and names are unique", () => {
+test("the public catalog contains exactly the six TDS-backed products", () => {
+  assert.equal(products.length, 6);
+  assert.equal(technicalDataSheets.length, 6);
   assert.equal(new Set(products.map((product) => product.slug)).size, products.length);
   assert.equal(new Set(products.map((product) => product.name)).size, products.length);
+  assert.deepEqual(
+    new Set(products.map((product) => product.documents.find((document) => document.type === "TDS")?.href)),
+    new Set(technicalDataSheets.map((document) => document.href)),
+  );
 });
 
 test("all declared downloadable files exist", async () => {

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { products } from "../src/data/siteData.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = resolve(projectRoot, "dist");
@@ -8,7 +9,6 @@ const siteUrl = "https://midsouthlube.com";
 const defaultImage = `${siteUrl}/images/authentic/hero-poultry-brand.webp`;
 
 const baseHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
-const archivedProducts = JSON.parse(await readFile(resolve(projectRoot, "src/data/generated/products.json"), "utf8"));
 
 const decodeText = (value = "") => value
   .replace(/<[^>]+>/g, " ")
@@ -27,39 +27,22 @@ const escapeHtml = (value = "") => value
 
 const routeData = [
   ["/", "Food-Grade and Industrial Lubricants | Mid South Lubricants", "Specialty food-grade and industrial lubricants for safety, uptime, and demanding operating conditions."],
-  ["/products/", "Product Catalog | Mid South Lubricants", "Browse hydraulic fluids, compressor oils, heat-transfer fluids, freezer lubricants, chain lubricants, and greases."],
+  ["/products/", "Product Catalog | Mid South Lubricants", "Browse six documented heat-transfer, refrigeration, and synthetic food-grade oil products from Mid South Lubricants."],
   ["/about-us/", "About Mid South Lubricants", "Meet Ray and Tracie Tatum and learn how Mid South combines technical experience with direct customer support."],
   ["/faqs/", "Lubrication FAQ | Mid South Lubricants", "Answers about lubricant selection, service intervals, food-grade requirements, packaging, and product support."],
   ["/contact-us/", "Request a Quote | Mid South Lubricants", "Contact Mid South Lubricants for product selection help, technical questions, and quote requests."],
-  ["/pdf-resources/", "Technical Resources | Mid South Lubricants", "Download the current SKU directory and available product labels, or request technical and safety documents."],
+  ["/pdf-resources/", "Technical Resources | Mid South Lubricants", "Download the Technical Data Sheet for every product in the current Mid South Lubricants catalog."],
   ["/privacy-policy/", "Privacy Policy | Mid South Lubricants", "Learn how Mid South Lubricants handles information associated with this website and direct business inquiries."],
   ["/terms/", "Website Terms | Mid South Lubricants", "Review the terms governing use of the Mid South Lubricants website and product information."],
 ];
 
-const productData = archivedProducts.map((product) => ({
-  path: `/product/${product.slug}/`,
+const productData = products.map((product) => ({
+  path: product.href,
   title: `${decodeText(product.name)} | Mid South Lubricants`,
-  description: decodeText(product.short_description).replace(/Additional Information:.*/i, "").slice(0, 155),
-  image: product.images[0]?.src ? `${siteUrl}/images/catalog/${product.images[0].src.split("/").pop()}` : defaultImage,
-  sku: product.tags[0]?.name || undefined,
+  description: decodeText(product.shortDescriptionHtml).slice(0, 155),
+  image: product.image ? new URL(product.image, siteUrl).href : defaultImage,
+  sku: product.productCodes[0] || undefined,
 }));
-
-productData.push(
-  {
-    path: "/product/food-grade-white-oil/",
-    title: "Food Grade White Oil | Mid South Lubricants",
-    description: "Food-grade white oil available in a Grade 20, 55 gallon drum configuration.",
-    image: `${siteUrl}/images/products-group.webp`,
-    sku: "MSL-2090BO",
-  },
-  {
-    path: "/product/synthetic-food-grade-chain-lubricant-with-tackifier/",
-    title: "Synthetic Food Grade Chain Lubricant with Tackifier | Mid South Lubricants",
-    description: "Synthetic food-grade chain lubricant with tackifier for chain and conveyor applications.",
-    image: `${siteUrl}/images/product-chain-lubricant.webp`,
-    sku: "MSL-2185SFGCLWT",
-  },
-);
 
 const organizationSchema = {
   "@context": "https://schema.org",
