@@ -539,7 +539,7 @@ function HomePage({ navigate }) {
 
       <section className="section about-preview" aria-labelledby="about-preview-title">
         <div className="about-preview__images" data-reveal>
-          <img src="/images/authentic/ray-tracie-owners.webp" alt="Ray and Tracie Tatum, owners of Mid South Lubricants" width="1080" height="1395" loading="lazy" />
+          <img src="/images/authentic/ray-tracie-owners.webp" alt="Ray and Tracie Tatum, owners of Mid South Lubricants" width="1178" height="919" loading="lazy" />
         </div>
         <div className="about-preview__copy" data-reveal>
           <h2 id="about-preview-title">The Best Team Around</h2>
@@ -578,7 +578,7 @@ function ProductCatalog({ navigate }) {
 
   return (
     <>
-      <PageHero title="Our Products" copy="Six specialty products for heat transfer, refrigeration, and food-processing equipment, each supported by a current Technical Data Sheet." image="/images/products-group.webp" />
+      <PageHero title="Our Products" copy={`${products.length} specialty lubricants and fluids for heat transfer, refrigeration, hydraulic, compressor, gear, chain, grease, and vacuum-pump applications.`} image="/images/products-group.webp" />
       <section className="catalog section" aria-labelledby="catalog-results-title">
         <div className="catalog-controls" data-reveal>
           <div className="search-field">
@@ -648,11 +648,11 @@ function ProductPage({ product, navigate }) {
         <section id="documents" className="section product-documents" aria-labelledby="product-documents-title">
           <div className="section-heading">
             <h2 id="product-documents-title">Technical &amp; safety documents</h2>
-            <p>Download the manufacturer’s current Technical Data Sheet (TDS) and Safety Data Sheet (SDS) when available.</p>
+            <p>Download the supplied Technical Data Sheet (TDS) and Safety Data Sheet (SDS) documents for this product.</p>
           </div>
           <div className="document-download-grid">
             {product.documents.map((document) => (
-              <article key={document.type}>
+              <article key={document.href || `${document.type}-${document.title}`}>
                 <span className="document-type">{document.type}</span>
                 <h3>{document.title}</h3>
                 <p>{document.description}</p>
@@ -921,7 +921,7 @@ function ResourcesPage({ navigate }) {
     <>
       <PageHero
         title="Resources"
-        copy="Download the Technical Data Sheet for every product in the current Mid South Lubricants catalog."
+        copy="Find product specifications here, then open any product page for its supplied Technical Data Sheet and Safety Data Sheet downloads."
         image="/images/authentic/processing-conveyor-overview.webp"
         imageAlt="A food-processing conveyor system on the production floor"
         imageWidth={782}

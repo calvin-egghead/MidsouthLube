@@ -753,23 +753,17 @@ summary:focus-visible {
 }
 
 .about-preview__images {
-  min-height: 620px;
   display: grid;
-  grid-template-columns: minmax(0, 0.83fr) minmax(0, 1.17fr);
-  align-items: end;
-  gap: 18px;
+  grid-template-columns: 1fr;
 }
 
 .about-preview__images img {
   width: 100%;
-  height: 82%;
+  height: auto;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  object-position: center top;
+  object-position: center;
   border-radius: 12px;
-}
-
-.about-preview__images img:last-child {
-  height: 100%;
 }
 
 .about-preview__copy > p {

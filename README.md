@@ -31,7 +31,7 @@ To enable Google Tag Manager, copy `.env.example` to `.env.local` and set `VITE_
 
 ## Technical documents
 
-The public catalog is limited to the six products with approved Technical Data Sheets under `public/documents/tds/`. Each product-to-document mapping lives in `src/data/siteData.js`. Safety Data Sheets are requested from Mid South and must never be created or inferred from marketing copy.
+The public catalog maps the six supplied Technical Data Sheets under `public/documents/tds/` and the supplied product- and grade-specific Safety Data Sheets under `public/documents/sds/`. Each product-to-document mapping lives in `src/data/siteData.js`. Missing documents are requested from Mid South and must never be created or inferred from marketing copy.
 
 ## Before publication
 

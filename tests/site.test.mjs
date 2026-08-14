@@ -8,15 +8,19 @@ const root = resolve(import.meta.dirname, "..");
 const siteData = await readFile(resolve(root, "src/data/siteData.js"), "utf8");
 const app = await readFile(resolve(root, "src/App.jsx"), "utf8");
 
-test("the public catalog contains exactly the six TDS-backed products", () => {
-  assert.equal(products.length, 6);
+test("the public catalog includes every supplied document-backed product", () => {
+  assert.equal(products.length, 26);
   assert.equal(technicalDataSheets.length, 6);
   assert.equal(new Set(products.map((product) => product.slug)).size, products.length);
   assert.equal(new Set(products.map((product) => product.name)).size, products.length);
   assert.deepEqual(
-    new Set(products.map((product) => product.documents.find((document) => document.type === "TDS")?.href)),
+    new Set(products.map((product) => product.documents.find((document) => document.type === "TDS")?.href).filter(Boolean)),
     new Set(technicalDataSheets.map((document) => document.href)),
   );
+  const suppliedSds = products.flatMap((product) => product.documents)
+    .filter((document) => document.type === "SDS" && document.href);
+  assert.equal(suppliedSds.length, 30);
+  assert.equal(new Set(suppliedSds.map((document) => document.href)).size, suppliedSds.length);
 });
 
 test("all declared downloadable files exist", async () => {

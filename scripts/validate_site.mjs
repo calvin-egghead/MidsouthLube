@@ -1,7 +1,7 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { products } from "../src/data/siteData.js";
+import { products, technicalDataSheets } from "../src/data/siteData.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = resolve(projectRoot, "dist");
@@ -43,10 +43,14 @@ const sitemap = await readFile(resolve(distRoot, "sitemap.xml"), "utf8");
 const indexedRoutes = (sitemap.match(/<loc>/g) || []).length;
 const expectedIndexedRoutes = 8 + products.length;
 if (indexedRoutes !== expectedIndexedRoutes) failures.push(`sitemap.xml contains ${indexedRoutes} routes; expected ${expectedIndexedRoutes}`);
-if (products.length !== 6) failures.push(`public catalog contains ${products.length} products; expected 6`);
+if (products.length !== 26) failures.push(`public catalog contains ${products.length} products; expected 26`);
+if (technicalDataSheets.length !== 6) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 6`);
+const safetyDataSheets = products.flatMap((product) => product.documents)
+  .filter((document) => document.type === "SDS" && document.href);
+if (safetyDataSheets.length !== 30) failures.push(`product catalog contains ${safetyDataSheets.length} Safety Data Sheets; expected 30`);
 for (const product of products) {
-  const tds = product.documents.find((document) => document.type === "TDS" && document.href);
-  if (!tds) failures.push(`${product.slug}: missing Technical Data Sheet`);
+  const suppliedDocuments = product.documents.filter((document) => document.href);
+  if (!suppliedDocuments.length) failures.push(`${product.slug}: missing supplied product document`);
 }
 
 const appSource = await readFile(resolve(projectRoot, "src/App.jsx"), "utf8");
