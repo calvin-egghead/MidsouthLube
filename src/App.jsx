@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { trackEvent, trackPageView } from "./analytics";
 import {
   applications,
+  catalogCategoryGroups,
   faqs,
   featuredProducts,
   normalizeDashes,
@@ -24,11 +25,11 @@ const routeMeta = {
   ],
   "/products/": [
     "Product Catalog | Mid South Lubricants",
-    "Browse six documented heat-transfer, refrigeration, and synthetic food-grade oil products from Mid South Lubricants.",
+    `Search ${products.length} specialty lubricants by product type, MSL number, package SKU, SDS, or TDS.`,
   ],
   "/about-us/": [
     "About Mid South Lubricants",
-    "Meet Ray and Tracie Tatum and learn how Mid South combines technical experience with direct customer support.",
+    "Meet Ray Tatum, Tracie Tatum, and Chelsea Chapman and learn how Mid South combines technical experience with direct customer support.",
   ],
   "/faqs/": [
     "Lubrication FAQ | Mid South Lubricants",
@@ -57,6 +58,52 @@ const plainText = (value = "") => {
   const element = document.createElement("textarea");
   element.innerHTML = withoutTags;
   return normalizeDashes(element.value).replace(/\s+/g, " ").replace(/\(\s+/g, "(").trim();
+};
+
+const normalizeSearch = (value = "") => value
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
+
+const searchTokens = (value = "") => normalizeSearch(value).split(/\s+/).filter(Boolean);
+
+const matchesSearch = (values, tokens) => {
+  if (!tokens.length) return true;
+  const normalized = normalizeSearch(values.flat(Infinity).filter(Boolean).join(" "));
+  const compact = normalized.replace(/\s+/g, "");
+  return tokens.every((token) => normalized.includes(token) || compact.includes(token));
+};
+
+const descriptiveProductName = (product) => {
+  const code = product.productCodes[0] || "";
+  if (!code || !product.name.toLowerCase().startsWith(code.toLowerCase())) return product.name;
+  return product.name.slice(code.length).replace(/^[\s-]+/, "") || product.name;
+};
+
+const productSearchValues = (product) => [
+  product.name,
+  product.categories,
+  product.productCodes,
+  product.packageSkus.map((item) => [item.sku, item.packaging]),
+  product.documents.map((document) => [document.type, document.title, document.href]),
+  plainText(product.shortDescriptionHtml),
+];
+
+const productMatchesGroup = (product, group) => (
+  !group?.categories.length || group.categories.some((category) => product.categories.includes(category))
+);
+
+const quoteHrefFor = (product, selectedPackage = null, documentType = "") => {
+  const params = new URLSearchParams({
+    product: product.name,
+    code: product.productCodes[0] || "",
+  });
+  if (selectedPackage) {
+    params.set("sku", selectedPackage.sku);
+    params.set("package", selectedPackage.packaging);
+  }
+  if (documentType) params.set("document", documentType);
+  return `/contact-us/?${params.toString()}#quote`;
 };
 
 const setMetaContent = (selector, content) => {
@@ -368,15 +415,18 @@ function PageHero({ title, copy, image, imageAlt = "", imageWidth = 1536, imageH
 }
 
 function ProductCard({ product, navigate }) {
+  const primaryCode = product.productCodes[0];
   return (
     <Link className="product-card" href={product.href} navigate={navigate} data-reveal>
       <div className="product-card__image">
         <img src={product.image} alt={`${product.name} product`} width="504" height="634" loading="lazy" />
       </div>
       <div className="product-card__body">
-        <h3>{product.name}</h3>
+        {primaryCode ? <span className="product-card__code"><span>Product code</span><code>{primaryCode}</code></span> : null}
+        <h3>{descriptiveProductName(product)}</h3>
         <p>{plainText(product.shortDescriptionHtml).split("Additional Information:")[0]}</p>
         <div className="product-card__footer">
+          <span>{product.packageSkus.length ? `${product.packageSkus.length} package SKUs` : "Quote-based ordering"}</span>
           <strong>View Product</strong>
         </div>
       </div>
@@ -491,29 +541,27 @@ function HomePage({ navigate }) {
 
       <section className="section application-section" aria-labelledby="application-title">
         <div className="section-heading" data-reveal>
-          <h2 id="application-title">Our Lubricants</h2>
-          <p>Our focused catalog covers heat transfer systems, ammonia refrigeration, and food-processing equipment, with a current Technical Data Sheet for every product.</p>
+          <h2 id="application-title">Find Products by Category</h2>
+          <p>Choose a product category to open the full catalog with the right filter already applied.</p>
         </div>
         <div className="application-browser">
-          <div className="application-list" data-reveal>
+          <nav className="application-list" aria-label="Product categories" data-reveal>
             {applications.map((application, index) => (
-              <button
+              <Link
                 key={application.name}
                 className={index === activeApplication ? "is-active" : ""}
-                type="button"
-                aria-pressed={index === activeApplication}
-                onClick={() => setActiveApplication(index)}
+                href={`/products/?category=${encodeURIComponent(application.category)}`}
+                navigate={navigate}
                 onMouseEnter={() => setActiveApplication(index)}
                 onFocus={() => setActiveApplication(index)}
               >
-                <span>{application.name}</span>
+                <span>{application.name}<b>{products.filter((product) => product.categories.includes(application.category)).length}</b></span>
                 <small>{application.copy}</small>
-              </button>
+              </Link>
             ))}
-          </div>
+          </nav>
           <div className="application-image" data-reveal>
             <img key={active.image} src={active.image} alt={`${active.name} application`} width="1536" height="1024" loading="lazy" />
-            <ButtonLink href={`/products/?category=${encodeURIComponent(active.category)}`} navigate={navigate} variant="light">View Matching Products</ButtonLink>
           </div>
         </div>
       </section>
@@ -521,7 +569,7 @@ function HomePage({ navigate }) {
       <section className="featured-products-home" aria-labelledby="featured-title">
         <div className="featured-products-home__intro" data-reveal>
           <h2 id="featured-title">Top-Grade Products</h2>
-          <p>Explore six documented products for heat transfer, refrigeration, food-processing, hydraulic, compressor, and gear applications.</p>
+          <p>Explore specialty products for heat transfer, refrigeration, food-processing, hydraulic, compressor, and gear applications.</p>
           <ButtonLink href="/products/" navigate={navigate} variant="text">View Products</ButtonLink>
         </div>
         <div className="featured-products-home__grid">
@@ -564,38 +612,140 @@ function HomePage({ navigate }) {
 }
 
 function ProductCatalog({ navigate }) {
-  const initialCategory = new URLSearchParams(window.location.search).get("category") || "All Products";
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState(productCategories.includes(initialCategory) ? initialCategory : "All Products");
-  const filteredProducts = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return products.filter((product) => {
-      const matchesCategory = category === "All Products" || product.categories.includes(category);
-      const haystack = [product.name, product.categories.join(" "), product.productCodes.join(" "), plainText(product.shortDescriptionHtml)].join(" ").toLowerCase();
-      return matchesCategory && (!needle || haystack.includes(needle));
-    });
-  }, [query, category]);
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialCategory = initialParams.get("category") || "All Products";
+  const initialGroup = catalogCategoryGroups.find((group) => group.label === initialCategory)
+    || catalogCategoryGroups.find((group) => group.categories.includes(initialCategory))
+    || (productCategories.includes(initialCategory) ? { label: initialCategory, categories: [initialCategory] } : catalogCategoryGroups[0]);
+  const [query, setQuery] = useState(initialParams.get("q") || "");
+  const [category, setCategory] = useState(initialGroup.label);
+  const activeGroup = catalogCategoryGroups.find((group) => group.label === category) || initialGroup;
+  const tokens = useMemo(() => searchTokens(query), [query]);
+
+  const updateCatalogUrl = (nextQuery, nextCategory) => {
+    const params = new URLSearchParams();
+    if (nextQuery.trim()) params.set("q", nextQuery.trim());
+    if (nextCategory !== "All Products") params.set("category", nextCategory);
+    window.history.replaceState({}, "", `/products/${params.size ? `?${params.toString()}` : ""}`);
+  };
+
+  const filteredProducts = useMemo(() => products.filter((product) => (
+    productMatchesGroup(product, activeGroup) && matchesSearch(productSearchValues(product), tokens)
+  )), [activeGroup, tokens]);
+
+  const documentMatches = useMemo(() => {
+    if (!tokens.length) return [];
+    return products
+      .filter((product) => productMatchesGroup(product, activeGroup))
+      .flatMap((product) => product.documents.map((document) => ({ product, document })))
+      .filter(({ product, document }) => matchesSearch([
+        product.name,
+        product.productCodes,
+        document.type,
+        document.title,
+        document.href,
+      ], tokens))
+      .slice(0, 8);
+  }, [activeGroup, tokens]);
+
+  const skuMatches = useMemo(() => {
+    if (!tokens.length) return [];
+    return products
+      .filter((product) => productMatchesGroup(product, activeGroup))
+      .flatMap((product) => product.packageSkus.map((packageSku) => ({ product, packageSku })))
+      .filter(({ product, packageSku }) => matchesSearch([
+        product.name,
+        product.productCodes,
+        packageSku.sku,
+        packageSku.packaging,
+      ], tokens))
+      .slice(0, 8);
+  }, [activeGroup, tokens]);
+
+  const selectCategory = (nextCategory) => {
+    setCategory(nextCategory);
+    updateCatalogUrl(query, nextCategory);
+  };
+
+  const changeQuery = (event) => {
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+    updateCatalogUrl(nextQuery, category);
+  };
+
+  const clearFilters = () => {
+    setQuery("");
+    setCategory("All Products");
+    updateCatalogUrl("", "All Products");
+  };
 
   return (
     <>
-      <PageHero title="Our Products" copy={`${products.length} specialty lubricants and fluids for heat transfer, refrigeration, hydraulic, compressor, gear, chain, grease, and vacuum-pump applications.`} image="/images/products-group.webp" />
-      <section className="catalog section" aria-labelledby="catalog-results-title">
-        <div className="catalog-controls" data-reveal>
-          <div className="search-field">
-            <label htmlFor="product-search">Search products</label>
-            <input id="product-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, application, or product code" />
-          </div>
-          <div className="filter-field">
-            <label htmlFor="product-category">Product category</label>
-            <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)}>
-              <option>All Products</option>
-              {productCategories.map((item) => <option key={item}>{item}</option>)}
-            </select>
+      <section className="catalog-hero" aria-labelledby="catalog-title">
+        <div className="catalog-hero__copy" data-reveal>
+          <h1 id="catalog-title">Find the right lubricant, fast.</h1>
+          <p>Search by application, MSL number, package SKU, SDS, or TDS.</p>
+          <div className="search-field catalog-hero__search">
+            <label htmlFor="product-search">Search the product catalog</label>
+            <input id="product-search" type="search" value={query} onChange={changeQuery} placeholder="Try 6831 SDS or hydraulic fluid" autoComplete="off" />
           </div>
         </div>
+        <div className="catalog-hero__image" data-reveal>
+          <img src="/images/catalog/mid-south-container-family.webp" alt="Mid South lubricant packages in pails, drum, and tote sizes" width="1200" height="1200" fetchPriority="high" />
+        </div>
+      </section>
+
+      <section className="catalog section" aria-labelledby="catalog-results-title">
+        <nav className="catalog-categories" aria-labelledby="catalog-categories-title" data-reveal>
+          <h2 id="catalog-categories-title">Browse by product type</h2>
+          <div className="catalog-category-list">
+            {catalogCategoryGroups.map((group) => {
+              const count = products.filter((product) => productMatchesGroup(product, group)).length;
+              return (
+                <button key={group.label} type="button" className={category === group.label ? "is-active" : ""} aria-pressed={category === group.label} onClick={() => selectCategory(group.label)}>
+                  <span>{group.label}</span><small>{count}</small>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {tokens.length ? <section className="direct-results" aria-labelledby="direct-results-title">
+          <div className="direct-results__heading">
+            <h2 id="direct-results-title">Direct matches</h2>
+            <p>Open a product, package SKU, or document without digging through the catalog.</p>
+          </div>
+          <div className="direct-results__groups">
+            <div>
+              <h3>Documents</h3>
+              {documentMatches.length ? <div className="direct-result-list">{documentMatches.map(({ product, document }) => (
+                document.href ? <a key={`${product.id}-${document.type}-${document.title}`} href={document.href} download>
+                  <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
+                  <span>{document.title}</span>
+                  <b>Download</b>
+                </a> : <Link key={`${product.id}-${document.type}-${document.title}`} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
+                  <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
+                  <span>{document.title}</span>
+                  <b>Request</b>
+                </Link>
+              ))}</div> : <p className="direct-results__empty">No document matches.</p>}
+            </div>
+            <div>
+              <h3>Package SKUs</h3>
+              {skuMatches.length ? <div className="direct-result-list">{skuMatches.map(({ product, packageSku }) => (
+                <Link key={packageSku.sku} href={product.href} navigate={navigate}>
+                  <span><strong>SKU</strong>{product.productCodes[0]}</span>
+                  <span><code>{packageSku.sku}</code><small>{packageSku.packaging}</small></span>
+                  <b>Open</b>
+                </Link>
+              ))}</div> : <p className="direct-results__empty">No package SKU matches.</p>}
+            </div>
+          </div>
+        </section> : null}
+
         <div className="catalog-summary">
-          <h2 id="catalog-results-title">{filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}</h2>
-          {(query || category !== "All Products") ? <button type="button" className="text-button" onClick={() => { setQuery(""); setCategory("All Products"); }}>Clear filters</button> : null}
+          <h2 id="catalog-results-title">{filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}{category !== "All Products" ? ` in ${category}` : ""}</h2>
+          {(query || category !== "All Products") ? <button type="button" className="text-button" onClick={clearFilters}>Clear filters</button> : null}
         </div>
         {filteredProducts.length ? (
           <div className="product-grid">{filteredProducts.map((product) => <ProductCard product={product} navigate={navigate} key={product.id} />)}</div>
@@ -614,6 +764,11 @@ function ProductCatalog({ navigate }) {
 
 function ProductPage({ product, navigate }) {
   const related = products.filter((item) => item.id !== product.id && item.categories.some((category) => product.categories.includes(category))).slice(0, 3);
+  const [selectedSku, setSelectedSku] = useState(product.packageSkus[0]?.sku || "");
+  const selectedPackage = product.packageSkus.find((item) => item.sku === selectedSku) || null;
+  const primaryCode = product.productCodes[0];
+  const firstTds = product.documents.find((document) => document.type === "TDS" && document.href);
+  const firstSds = product.documents.find((document) => document.type === "SDS" && document.href);
 
   return (
     <>
@@ -624,24 +779,26 @@ function ProductPage({ product, navigate }) {
         <section className="product-hero">
           <div className="product-hero__image" data-reveal><img src={product.image} alt={`${product.name} product`} width="504" height="634" fetchPriority="high" /></div>
           <div className="product-hero__copy" data-reveal>
-            <h1>{product.name}</h1>
-            {product.productCodes.length ? <p className="product-code">Product code: {product.productCodes.join(", ")}</p> : null}
+            {primaryCode ? <p className="product-hero__code">{primaryCode}</p> : null}
+            <h1>{descriptiveProductName(product)}</h1>
+            {product.productCodes.length > 1 ? <p className="product-code">Related identifiers: {product.productCodes.slice(1).join(", ")}</p> : null}
             <div className="rich-text rich-text--lead" dangerouslySetInnerHTML={{ __html: product.shortDescriptionHtml.split(/<h3/i)[0] }} />
+
+            {product.packageSkus.length ? <div className="product-package-picker">
+              <label htmlFor="product-package">Choose a package size</label>
+              <select id="product-package" value={selectedSku} onChange={(event) => setSelectedSku(event.target.value)}>
+                {product.packageSkus.map((item) => <option key={item.sku} value={item.sku}>{item.packaging} - {item.sku}</option>)}
+              </select>
+            </div> : null}
+
             <div className="button-row">
-              <ButtonLink href={`/contact-us/?product=${encodeURIComponent(product.name)}#quote`} navigate={navigate}>Request a Quote</ButtonLink>
+              <ButtonLink href={quoteHrefFor(product, selectedPackage)} navigate={navigate}>Request a Quote</ButtonLink>
               <a className="button button--secondary" href={contactPhoneHref}>Call {contactPhone}</a>
             </div>
-          </div>
-        </section>
-
-        <section className="product-information section">
-          <div className="product-description" data-reveal>
-            <h2>Product details</h2>
-            <div className="rich-text" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
-          </div>
-          <div className="product-features" data-reveal>
-            <h2>Key features</h2>
-            {product.features.length ? <ul>{product.features.map((feature) => <li key={feature}>{feature}</li>)}</ul> : <p>Contact Mid South for application details and current technical documentation.</p>}
+            <div className="product-hero__documents" aria-label="Product documents">
+              {firstSds ? <a href={firstSds.href} download>Download SDS</a> : <ButtonLink href={quoteHrefFor(product, null, "SDS")} navigate={navigate} variant="text">Request SDS</ButtonLink>}
+              {firstTds ? <a href={firstTds.href} download>Download TDS</a> : <ButtonLink href={quoteHrefFor(product, null, "TDS")} navigate={navigate} variant="text">Request TDS</ButtonLink>}
+            </div>
           </div>
         </section>
 
@@ -660,7 +817,7 @@ function ProductPage({ product, navigate }) {
                   <a className="button button--secondary" href={document.href} download>Download {document.type} PDF</a>
                 ) : (
                   <ButtonLink
-                    href={`/contact-us/?product=${encodeURIComponent(product.name)}&document=${document.type}#quote`}
+                    href={quoteHrefFor(product, null, document.type)}
                     navigate={navigate}
                     variant="secondary"
                   >
@@ -674,17 +831,17 @@ function ProductPage({ product, navigate }) {
 
         {product.packageSkus.length ? <section className="section options-section" aria-labelledby="package-skus-title">
           <div className="section-heading">
-            <h2 id="package-skus-title">Package SKU directory</h2>
-            <p>Current package-level SKUs supplied by Mid South. Confirm the required grade and availability when requesting a quote.</p>
+            <h2 id="package-skus-title">Available package sizes</h2>
+            <p>Select the exact package SKU when requesting a quote. Large or custom quantities remain quote-only.</p>
           </div>
-          <p className="table-scroll-hint">Swipe horizontally to view all package details.</p>
-          <div className="variation-table-wrap" tabIndex="0" role="region" aria-label={`${product.name} package SKU directory`}>
-            <table className="variation-table variation-table--compact">
-              <thead><tr><th>Packaging</th><th>Package SKU</th></tr></thead>
-              <tbody>{product.packageSkus.map((item) => (
-                <tr key={item.sku}><td>{item.packaging}</td><td><code>{item.sku}</code></td></tr>
-              ))}</tbody>
-            </table>
+          <div className="package-option-grid">
+            {product.packageSkus.map((item) => (
+              <article key={item.sku}>
+                <h3>{item.packaging}</h3>
+                <code>{item.sku}</code>
+                <ButtonLink href={quoteHrefFor(product, item)} navigate={navigate} variant="text">Quote this size</ButtonLink>
+              </article>
+            ))}
           </div>
         </section> : null}
 
@@ -720,6 +877,17 @@ function ProductPage({ product, navigate }) {
           </div>
         </section> : null}
 
+        <section className="product-information section">
+          <div className="product-description" data-reveal>
+            <h2>Product details</h2>
+            <div className="rich-text" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
+          </div>
+          <div className="product-features" data-reveal>
+            <h2>Key features</h2>
+            {product.features.length ? <ul>{product.features.map((feature) => <li key={feature}>{feature}</li>)}</ul> : <p>Contact Mid South for application details and current technical documentation.</p>}
+          </div>
+        </section>
+
         {related.length ? <section className="section related-products"><div className="section-heading"><h2>Related products</h2></div><div className="product-grid product-grid--three">{related.map((item) => <ProductCard key={item.id} product={item} navigate={navigate} />)}</div></section> : null}
       </div>
       <QuoteBand navigate={navigate} productName={product.name} />
@@ -754,17 +922,16 @@ function AboutPage({ navigate }) {
       <section className="leadership-section" aria-labelledby="leadership-title">
         <div className="leadership-intro" data-reveal>
           <h2 id="leadership-title">Owner-led. Customer close.</h2>
-          <p>Ray and Tracie pair deep industry experience with the kind of direct, personal support that shaped Mid South from the beginning.</p>
+          <p>Ray, Tracie, and Chelsea bring direct, personal support to every customer relationship.</p>
         </div>
         <div className="leadership-list">
           <article className="leader-profile leader-profile--ray">
             <div className="leader-profile__media" data-reveal>
               <div className="leader-profile__portrait">
-                <img src="/images/company/ray-tatum.webp" alt="Ray Tatum" width="575" height="816" loading="lazy" />
+                <img src="/images/company/ray-tatum-2026.webp" alt="Ray Tatum" width="1600" height="2000" loading="lazy" />
               </div>
             </div>
             <div className="leader-profile__copy" data-reveal>
-              <p className="leader-profile__role">Co-Owner, CEO</p>
               <h3>Ray Tatum</h3>
               <p>Born and raised in Winnsboro, Louisiana, Ray has spent more than 30 years in the industry. He started as a safety engineer at ConAgra in Farmerville, moved into plant management, and built a 25-year career in capital sales.</p>
               <p>Ray holds a Bachelor of Science in Aviation from Louisiana Tech University, with a minor in Industrial Safety &amp; Technology from LSU. He is driven by practical problem solving, strong customer service, and the goal of building a trusted business for the next generation.</p>
@@ -781,7 +948,6 @@ function AboutPage({ navigate }) {
               </div>
             </div>
             <div className="leader-profile__copy" data-reveal>
-              <p className="leader-profile__role">Co-Owner, CFO</p>
               <h3>Tracie Tatum</h3>
               <p>Originally from Del Mar, California, Tracie is the Co-Owner and CFO of Mid South Lubricants. Alongside more than 30 years supporting Ray in business, she built her own career as a nurse and brings that same sense of care to the company.</p>
               <p>Tracie focuses on customer relationships, careful listening, and building a company rooted in genuine connection. Her long-term vision is to grow Mid South into a business the family can be proud to pass down.</p>
@@ -789,6 +955,17 @@ function AboutPage({ navigate }) {
                 <div><dt>Background</dt><dd>Nursing and business operations</dd></div>
                 <div><dt>Focus</dt><dd>Relationships and financial stewardship</dd></div>
               </dl>
+            </div>
+          </article>
+          <article className="leader-profile leader-profile--chelsea">
+            <div className="leader-profile__media" data-reveal>
+              <div className="leader-profile__portrait">
+                <img src="/images/company/chelsea-chapman.webp" alt="Chelsea Chapman" width="1600" height="2000" loading="lazy" />
+              </div>
+            </div>
+            <div className="leader-profile__copy" data-reveal>
+              <h3>Chelsea Chapman</h3>
+              <p>Chelsea Chapman is part of the Mid South Lubricants team, helping the company provide responsive, personal service to its customers.</p>
             </div>
           </article>
         </div>
@@ -836,6 +1013,9 @@ function FaqPage({ navigate }) {
 function ContactForm() {
   const searchParams = new URLSearchParams(window.location.search);
   const productName = searchParams.get("product") || "";
+  const productCode = searchParams.get("code") || "";
+  const packageSku = searchParams.get("sku") || "";
+  const packageSize = searchParams.get("package") || "";
   const documentType = searchParams.get("document") || "";
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -856,14 +1036,30 @@ function ContactForm() {
       `Phone: ${data.get("phone") || "Not provided"}`,
       `Product category: ${data.get("category")}`,
       `Lubricant type: ${data.get("type")}`,
+      `Product: ${data.get("product") || "Not provided"}`,
+      `MSL / product code: ${data.get("productCode") || "Not provided"}`,
+      `Grade / viscosity: ${data.get("grade") || "Not provided"}`,
+      `Package size: ${data.get("packageSize") || "Not provided"}`,
+      `Package SKU: ${data.get("sku") || "Not provided"}`,
+      `Quantity: ${data.get("quantity") || "Not provided"}`,
+      `Existing quote number: ${data.get("quoteNumber") || "Not provided"}`,
+      `Purchase order number: ${data.get("poNumber") || "Not provided"}`,
       "",
       data.get("needs"),
     ];
-    const subject = documentType && productName
+    const baseSubject = documentType && productName
       ? `${documentType} request: ${productName}`
       : productName ? `Quote request: ${productName}` : "Lubricant quote request";
+    const reference = data.get("quoteNumber") || data.get("poNumber");
+    const subject = reference ? `${baseSubject} - Ref ${reference}` : baseSubject;
     setSubmitted(true);
-    trackEvent("form_prepare_email", { form_name: "quote_request", product_name: productName || undefined, document_type: documentType || undefined });
+    trackEvent("form_prepare_email", {
+      form_name: "quote_request",
+      product_name: data.get("product") || undefined,
+      product_code: data.get("productCode") || undefined,
+      package_sku: data.get("sku") || undefined,
+      document_type: documentType || undefined,
+    });
     window.location.href = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
   };
 
@@ -878,6 +1074,14 @@ function ContactForm() {
         <label><span>Phone</span><input name="phone" type="tel" autoComplete="tel" /></label>
         <label><span>Product category</span><select name="category" defaultValue="Food-grade"><option>Food-grade</option><option>Industrial</option><option>Refrigeration</option><option>Other</option></select></label>
         <label><span>Product type</span><select name="type" defaultValue="Heat Transfer"><option>Heat Transfer</option><option>Ammonia Refrigeration</option><option>Compressor Oil</option><option>Food-Grade Oil</option><option>Gear Oil</option><option>Hydraulic Oil</option><option>System Cleaner</option><option>Other</option></select></label>
+        <label><span>Product</span><input name="product" defaultValue={productName} placeholder="Product name" /></label>
+        <label><span>MSL or product code</span><input name="productCode" defaultValue={productCode} placeholder="MSL-6831SFGLTCL" /></label>
+        <label><span>Grade or viscosity</span><input name="grade" placeholder="ISO 15, ISO 46, Grade 68" /></label>
+        <label><span>Package size</span><input name="packageSize" defaultValue={packageSize} placeholder="5 Gallon Pail" /></label>
+        <label><span>Package SKU</span><input name="sku" defaultValue={packageSku} placeholder="MSL-6831SFGLTCL-5P" /></label>
+        <label><span>Quantity</span><input name="quantity" inputMode="numeric" placeholder="Number of packages" /></label>
+        <label><span>Existing quote number</span><input name="quoteNumber" autoComplete="off" /></label>
+        <label><span>Purchase order number</span><input name="poNumber" autoComplete="off" /></label>
         <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={documentType && productName ? `Please send me the current ${documentType} PDF for ${productName}.` : productName ? `I would like information and availability for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
       </div>
       <button className="button button--primary" type="submit">Prepare Email</button>

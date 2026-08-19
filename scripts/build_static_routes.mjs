@@ -27,11 +27,11 @@ const escapeHtml = (value = "") => value
 
 const routeData = [
   ["/", "Food-Grade and Industrial Lubricants | Mid South Lubricants", "Specialty food-grade and industrial lubricants for safety, uptime, and demanding operating conditions."],
-  ["/products/", "Product Catalog | Mid South Lubricants", "Browse six documented heat-transfer, refrigeration, and synthetic food-grade oil products from Mid South Lubricants."],
+  ["/products/", "Product Catalog | Mid South Lubricants", `Search ${products.length} specialty lubricants by product type, MSL number, package SKU, SDS, or TDS.`],
   ["/about-us/", "About Mid South Lubricants", "Meet Ray and Tracie Tatum and learn how Mid South combines technical experience with direct customer support."],
   ["/faqs/", "Lubrication FAQ | Mid South Lubricants", "Answers about lubricant selection, service intervals, food-grade requirements, packaging, and product support."],
   ["/contact-us/", "Request a Quote | Mid South Lubricants", "Contact Mid South Lubricants for product selection help, technical questions, and quote requests."],
-  ["/pdf-resources/", "Technical Resources | Mid South Lubricants", "Download the Technical Data Sheet for every product in the current Mid South Lubricants catalog."],
+  ["/pdf-resources/", "Technical Resources | Mid South Lubricants", "Download available product documents or request the current SDS and TDS from Mid South Lubricants."],
   ["/privacy-policy/", "Privacy Policy | Mid South Lubricants", "Learn how Mid South Lubricants handles information associated with this website and direct business inquiries."],
   ["/terms/", "Website Terms | Mid South Lubricants", "Review the terms governing use of the Mid South Lubricants website and product information."],
 ];
