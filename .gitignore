@@ -1,0 +1,15 @@
+.git 
+.npm-cache
+dist 
+node-modules
+old-site-archive
+tests
+tmp
+.DS_Store
+.env.*
+eslint.*
+package-lock.json
+qa*
+REDESIGN_PLAN.md 
+vercel.json 
+vite.config.js

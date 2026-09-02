@@ -86,6 +86,7 @@ const productSearchValues = (product) => [
   product.productCodes,
   product.packageSkus.map((item) => [item.sku, item.packaging]),
   product.documents.map((document) => [document.type, document.title, document.href]),
+  product.uses,
   plainText(product.shortDescriptionHtml),
 ];
 
@@ -258,7 +259,7 @@ function Brand({ navigate, compact = false, hidden = false }) {
       aria-hidden={hidden || undefined}
       tabIndex={hidden ? -1 : undefined}
     >
-      <img src="/images/mid-south-logo.webp" alt="" width="54" height="54" />
+      <img src="/images/mid-south-logo.webp" alt="Mid South Lubricants logo" width="54" height="54" />
       <span className="brand__name"><span>Mid South</span><span>Lubricants</span></span>
     </Link>
   );
@@ -266,6 +267,37 @@ function Brand({ navigate, compact = false, hidden = false }) {
 
 function ButtonLink({ href, navigate, children, variant = "primary", className = "" }) {
   return <Link href={href} navigate={navigate} className={`button button--${variant} ${className}`.trim()}>{children}</Link>;
+}
+
+function DocumentAction({ product, document, navigate, variant = "secondary", compact = false }) {
+  const canDownload = document.action === "download" && document.href;
+  const className = compact ? "document-action document-action--compact" : `button button--${variant}`;
+  if (canDownload) {
+    return <a className={className} href={document.href} download>Download {document.type}</a>;
+  }
+  return (
+    <Link className={className} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
+      Request {document.type}
+    </Link>
+  );
+}
+
+function ProductUseList({ uses, compact = false }) {
+  if (!uses?.length) return null;
+
+  return (
+    <div className={`product-use-list ${compact ? "product-use-list--compact" : ""}`}>
+      <h3>Application fit</h3>
+      <ol>
+        {uses.map((use, index) => (
+          <li key={use}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <p>{use}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 function Header({ navigate, currentPath }) {
@@ -319,7 +351,7 @@ function Header({ navigate, currentPath }) {
           </nav>
           <div className="header-actions">
             <a className="header-phone" href={contactPhoneHref}>{contactPhone}</a>
-            <ButtonLink href="/contact-us/#quote" navigate={navigate} variant="primary">Talk to a Specialist</ButtonLink>
+            <ButtonLink href="/contact-us/#quote" navigate={navigate} variant="primary">Request a Quote</ButtonLink>
             <button
               className="menu-toggle"
               type="button"
@@ -345,7 +377,7 @@ function Header({ navigate, currentPath }) {
             return <Link key={href} href={href} navigate={navigate} aria-current={active ? "page" : undefined}>{label}</Link>;
           })}
           <a className="mobile-menu__phone" href={contactPhoneHref}>{contactPhone}</a>
-          <ButtonLink href="/contact-us/#quote" navigate={navigate}>Talk to a Specialist</ButtonLink>
+          <ButtonLink href="/contact-us/#quote" navigate={navigate}>Request a Quote</ButtonLink>
         </nav>
       </div>
     </>
@@ -367,8 +399,8 @@ function Footer({ navigate }) {
           <h2>Products</h2>
           <Link href="/products/?category=Food%20Grade" navigate={navigate}>Food-grade</Link>
           <Link href="/products/?category=Compressor%20Fluid" navigate={navigate}>Compressor oils</Link>
-          <Link href="/products/?category=Heat%20Transfer%20Fluid" navigate={navigate}>Heat-transfer fluids</Link>
-          <Link href="/products/?category=Cleaner" navigate={navigate}>System cleaner</Link>
+          <Link href="/products/?category=Thermal%20Fluid" navigate={navigate}>Heat-transfer fluids</Link>
+          <Link href="/products/?category=Fire%20Resistant" navigate={navigate}>Fire-resistant fluids</Link>
         </div>
         <div>
           <h2>Company</h2>
@@ -380,13 +412,14 @@ function Footer({ navigate }) {
         <div>
           <h2>Applications</h2>
           <Link href="/products/?category=Low%20Temperature" navigate={navigate}>Low-temperature</Link>
-          <Link href="/products/?category=Ammonia%20Refrigeration" navigate={navigate}>Ammonia refrigeration</Link>
-          <Link href="/products/?category=Gear%20Oil" navigate={navigate}>Gear units</Link>
+          <Link href="/products/?category=Refrigeration%20Oil" navigate={navigate}>Ammonia refrigeration</Link>
+          <Link href="/products/?category=Gear%20Fluid" navigate={navigate}>Gear units</Link>
           <Link href="/products/?category=Hydraulic%20Fluid" navigate={navigate}>Hydraulic systems</Link>
         </div>
       </div>
       <div className="footer-bottom">
         <p>© 2026 Mid South Lubricants. All rights reserved.</p>
+        <p>Created by Egghead Creative</p>
         <div>
           <Link href="/privacy-policy/" navigate={navigate}>Privacy Policy</Link>
           <Link href="/terms/" navigate={navigate}>Terms</Link>
@@ -416,8 +449,10 @@ function PageHero({ title, copy, image, imageAlt = "", imageWidth = 1536, imageH
 
 function ProductCard({ product, navigate }) {
   const primaryCode = product.productCodes[0];
+  const tds = product.documents.find((document) => document.type === "TDS");
+  const sds = product.documents.find((document) => document.type === "SDS");
   return (
-    <Link className="product-card" href={product.href} navigate={navigate} data-reveal>
+    <article className="product-card" data-reveal>
       <div className="product-card__image">
         <img src={product.image} alt={`${product.name} product`} width="504" height="634" loading="lazy" />
       </div>
@@ -425,12 +460,17 @@ function ProductCard({ product, navigate }) {
         {primaryCode ? <span className="product-card__code"><span>Product code</span><code>{primaryCode}</code></span> : null}
         <h3>{descriptiveProductName(product)}</h3>
         <p>{plainText(product.shortDescriptionHtml).split("Additional Information:")[0]}</p>
+        <ProductUseList uses={product.uses} compact />
         <div className="product-card__footer">
           <span>{product.packageSkus.length ? `${product.packageSkus.length} package SKUs` : "Quote-based ordering"}</span>
-          <strong>View Product</strong>
+          <Link href={product.href} navigate={navigate}>View Product</Link>
+        </div>
+        <div className="product-card__documents" aria-label={`${product.name} document actions`}>
+          {tds ? <DocumentAction product={product} document={tds} navigate={navigate} compact /> : null}
+          {sds ? <DocumentAction product={product} document={sds} navigate={navigate} compact /> : null}
         </div>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -503,7 +543,7 @@ function HomePage({ navigate }) {
           <img
             className="home-hero__background"
             src="/images/authentic/hero-poultry-brand.webp"
-            alt=""
+            alt="Premium lubricants for poultry processing"
             width="2560"
             height="1440"
             fetchPriority="high"
@@ -513,7 +553,7 @@ function HomePage({ navigate }) {
           <img
             className="home-hero__mobile-logo"
             src="/images/mid-south-logo.webp"
-            alt=""
+            alt="Mid South Lubricants logo"
             width="270"
             height="270"
             fetchPriority="high"
@@ -555,7 +595,7 @@ function HomePage({ navigate }) {
                 onMouseEnter={() => setActiveApplication(index)}
                 onFocus={() => setActiveApplication(index)}
               >
-                <span>{application.name}<b>{products.filter((product) => product.categories.includes(application.category)).length}</b></span>
+                <span>{application.name}</span>
                 <small>{application.copy}</small>
               </Link>
             ))}
@@ -570,13 +610,14 @@ function HomePage({ navigate }) {
         <div className="featured-products-home__intro" data-reveal>
           <h2 id="featured-title">Top-Grade Products</h2>
           <p>Explore specialty products for heat transfer, refrigeration, food-processing, hydraulic, compressor, and gear applications.</p>
-          <ButtonLink href="/products/" navigate={navigate} variant="text">View Products</ButtonLink>
+          <ButtonLink href="/products/" navigate={navigate} variant="text">Browse Products</ButtonLink>
         </div>
         <div className="featured-products-home__grid">
           {featuredProducts.slice(0, 3).map((product) => (
             <Link className="product-showcase" href={product.href} navigate={navigate} key={product.id} data-reveal>
               <div className="product-showcase__image">
                 <img src={product.image} alt={`${product.name} product`} width="504" height="634" loading="lazy" />
+                <img src="/images/mid-south-logo.webp" alt="Mid South Lubricants logo" className="product-showcase__logo" width="50" height="50" />
               </div>
               <h3>{product.name}</h3>
               <span>View Product</span>
@@ -665,6 +706,14 @@ function ProductCatalog({ navigate }) {
   const selectCategory = (nextCategory) => {
     setCategory(nextCategory);
     updateCatalogUrl(query, nextCategory);
+
+    // Scroll to results on mobile after updating category
+    if (window.innerWidth <= 767) { // mobile breakpoint from CSS
+      const resultsSection = document.getElementById('catalog-results-title');
+      if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   };
 
   const changeQuery = (event) => {
@@ -678,6 +727,41 @@ function ProductCatalog({ navigate }) {
     setCategory("All Products");
     updateCatalogUrl("", "All Products");
   };
+
+  const directResultsSection = tokens.length ? (
+    <section className="direct-results" aria-labelledby="direct-results-title">
+      <div className="direct-results__heading">
+        <h2 id="direct-results-title">Direct matches</h2>
+        <p>Download TDS sheets or request SDS sheets directly from the catalog search results.</p>
+      </div>
+      <div className="direct-results__groups">
+        <div>
+          <h3>Documents</h3>
+          {documentMatches.length ? <div className="direct-result-list">{documentMatches.map(({ product, document }) => (
+            document.action === "download" && document.href ? <a key={`${product.id}-${document.type}-${document.title}`} href={document.href} download>
+              <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
+              <span>{document.title}</span>
+              <b>Download</b>
+            </a> : <Link key={`${product.id}-${document.type}-${document.title}`} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
+              <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
+              <span>{document.title}</span>
+              <b>Request</b>
+            </Link>
+          ))}</div> : <p className="direct-results__empty">No document matches.</p>}
+        </div>
+        <div>
+          <h3>Package SKUs</h3>
+          {skuMatches.length ? <div className="direct-result-list">{skuMatches.map(({ product, packageSku }) => (
+            <Link key={packageSku.sku} href={product.href} navigate={navigate}>
+              <span><strong>SKU</strong>{product.productCodes[0]}</span>
+              <span><code>{packageSku.sku}</code><small>{packageSku.packaging}</small></span>
+              <b>Open</b>
+            </Link>
+          ))}</div> : <p className="direct-results__empty">No package SKU matches.</p>}
+        </div>
+      </div>
+    </section>
+  ) : null;
 
   return (
     <>
@@ -696,52 +780,17 @@ function ProductCatalog({ navigate }) {
       </section>
 
       <section className="catalog section" aria-labelledby="catalog-results-title">
+        {directResultsSection}
         <nav className="catalog-categories" aria-labelledby="catalog-categories-title" data-reveal>
           <h2 id="catalog-categories-title">Browse by product type</h2>
           <div className="catalog-category-list">
-            {catalogCategoryGroups.map((group) => {
-              const count = products.filter((product) => productMatchesGroup(product, group)).length;
-              return (
-                <button key={group.label} type="button" className={category === group.label ? "is-active" : ""} aria-pressed={category === group.label} onClick={() => selectCategory(group.label)}>
-                  <span>{group.label}</span><small>{count}</small>
-                </button>
-              );
-            })}
+            {catalogCategoryGroups.map((group) => (
+              <button key={group.label} type="button" className={category === group.label ? "is-active" : ""} aria-pressed={category === group.label} onClick={() => selectCategory(group.label)}>
+                <span>{group.label}</span>
+              </button>
+            ))}
           </div>
         </nav>
-
-        {tokens.length ? <section className="direct-results" aria-labelledby="direct-results-title">
-          <div className="direct-results__heading">
-            <h2 id="direct-results-title">Direct matches</h2>
-            <p>Open a product, package SKU, or document without digging through the catalog.</p>
-          </div>
-          <div className="direct-results__groups">
-            <div>
-              <h3>Documents</h3>
-              {documentMatches.length ? <div className="direct-result-list">{documentMatches.map(({ product, document }) => (
-                document.href ? <a key={`${product.id}-${document.type}-${document.title}`} href={document.href} download>
-                  <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
-                  <span>{document.title}</span>
-                  <b>Download</b>
-                </a> : <Link key={`${product.id}-${document.type}-${document.title}`} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
-                  <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
-                  <span>{document.title}</span>
-                  <b>Request</b>
-                </Link>
-              ))}</div> : <p className="direct-results__empty">No document matches.</p>}
-            </div>
-            <div>
-              <h3>Package SKUs</h3>
-              {skuMatches.length ? <div className="direct-result-list">{skuMatches.map(({ product, packageSku }) => (
-                <Link key={packageSku.sku} href={product.href} navigate={navigate}>
-                  <span><strong>SKU</strong>{product.productCodes[0]}</span>
-                  <span><code>{packageSku.sku}</code><small>{packageSku.packaging}</small></span>
-                  <b>Open</b>
-                </Link>
-              ))}</div> : <p className="direct-results__empty">No package SKU matches.</p>}
-            </div>
-          </div>
-        </section> : null}
 
         <div className="catalog-summary">
           <h2 id="catalog-results-title">{filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"}{category !== "All Products" ? ` in ${category}` : ""}</h2>
@@ -767,8 +816,8 @@ function ProductPage({ product, navigate }) {
   const [selectedSku, setSelectedSku] = useState(product.packageSkus[0]?.sku || "");
   const selectedPackage = product.packageSkus.find((item) => item.sku === selectedSku) || null;
   const primaryCode = product.productCodes[0];
-  const firstTds = product.documents.find((document) => document.type === "TDS" && document.href);
-  const firstSds = product.documents.find((document) => document.type === "SDS" && document.href);
+  const firstTds = product.documents.find((document) => document.type === "TDS");
+  const firstSds = product.documents.find((document) => document.type === "SDS");
 
   return (
     <>
@@ -796,8 +845,8 @@ function ProductPage({ product, navigate }) {
               <a className="button button--secondary" href={contactPhoneHref}>Call {contactPhone}</a>
             </div>
             <div className="product-hero__documents" aria-label="Product documents">
-              {firstSds ? <a href={firstSds.href} download>Download SDS</a> : <ButtonLink href={quoteHrefFor(product, null, "SDS")} navigate={navigate} variant="text">Request SDS</ButtonLink>}
-              {firstTds ? <a href={firstTds.href} download>Download TDS</a> : <ButtonLink href={quoteHrefFor(product, null, "TDS")} navigate={navigate} variant="text">Request TDS</ButtonLink>}
+              {firstTds ? <DocumentAction product={product} document={firstTds} navigate={navigate} compact /> : null}
+              {firstSds ? <DocumentAction product={product} document={firstSds} navigate={navigate} compact /> : null}
             </div>
           </div>
         </section>
@@ -805,7 +854,7 @@ function ProductPage({ product, navigate }) {
         <section id="documents" className="section product-documents" aria-labelledby="product-documents-title">
           <div className="section-heading">
             <h2 id="product-documents-title">Technical &amp; safety documents</h2>
-            <p>Download the supplied Technical Data Sheet (TDS) and Safety Data Sheet (SDS) documents for this product.</p>
+            <p>Download available Technical Data Sheets (TDS) directly. Safety Data Sheets (SDS) are supplied by request so Mid South can provide the current document for the product, grade, and package size.</p>
           </div>
           <div className="document-download-grid">
             {product.documents.map((document) => (
@@ -813,17 +862,7 @@ function ProductPage({ product, navigate }) {
                 <span className="document-type">{document.type}</span>
                 <h3>{document.title}</h3>
                 <p>{document.description}</p>
-                {document.href ? (
-                  <a className="button button--secondary" href={document.href} download>Download {document.type} PDF</a>
-                ) : (
-                  <ButtonLink
-                    href={quoteHrefFor(product, null, document.type)}
-                    navigate={navigate}
-                    variant="secondary"
-                  >
-                    Request {document.type} PDF
-                  </ButtonLink>
-                )}
+                <DocumentAction product={product} document={document} navigate={navigate} />
               </article>
             ))}
           </div>
@@ -881,6 +920,7 @@ function ProductPage({ product, navigate }) {
           <div className="product-description" data-reveal>
             <h2>Product details</h2>
             <div className="rich-text" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
+            <ProductUseList uses={product.uses} />
           </div>
           <div className="product-features" data-reveal>
             <h2>Key features</h2>
@@ -933,7 +973,7 @@ function AboutPage({ navigate }) {
             </div>
             <div className="leader-profile__copy" data-reveal>
               <h3>Ray Tatum</h3>
-              <p>Born and raised in Winnsboro, Louisiana, Ray has spent more than 30 years in the industry. He started as a safety engineer at ConAgra in Farmerville, moved into plant management, and built a 25-year career in capital sales.</p>
+              <p>Ray Tatum leads sales at Mid South Lubricants, bringing more than 30 years of industry experience. He started as a safety engineer at ConAgra in Farmerville, moved into plant management, and built a 25-year career in capital sales.</p>
               <p>Ray holds a Bachelor of Science in Aviation from Louisiana Tech University, with a minor in Industrial Safety &amp; Technology from LSU. He is driven by practical problem solving, strong customer service, and the goal of building a trusted business for the next generation.</p>
               <dl className="leader-profile__facts">
                 <div><dt>Experience</dt><dd>30+ years</dd></div>
@@ -965,7 +1005,7 @@ function AboutPage({ navigate }) {
             </div>
             <div className="leader-profile__copy" data-reveal>
               <h3>Chelsea Chapman</h3>
-              <p>Chelsea Chapman is part of the Mid South Lubricants team, helping the company provide responsive, personal service to its customers.</p>
+              <p>Chelsea Chapman is the Inside Sales Manager at Mid South Lubricants, helping the company provide responsive, personal service to its customers.</p>
             </div>
           </article>
         </div>
@@ -1202,7 +1242,7 @@ function NotFoundPage({ navigate }) {
 
 function QuoteBand({ navigate, productName = "" }) {
   const href = productName ? `/contact-us/?product=${encodeURIComponent(productName)}#quote` : "/contact-us/#quote";
-  return <section className="quote-band"><div><h2>Get Your Custom Quote Today</h2><p>Let us know what you need and we’ll help you find the right solution. Whether you’re replacing a spec or building a system from scratch, our team’s here to help.</p></div><ButtonLink href={href} navigate={navigate} variant="light">Request a Quote</ButtonLink></section>;
+  return <section className={`quote-band ${productName ? "quote-band--product" : ""}`.trim()}><div><h2>Get Your Custom Quote Today</h2><p>Let us know what you need and we’ll help you find the right solution. Whether you’re replacing a spec or building a system from scratch, our team’s here to help.</p></div><ButtonLink href={href} navigate={navigate} variant="light">Request a Quote</ButtonLink></section>;
 }
 
 function App() {

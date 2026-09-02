@@ -42,6 +42,7 @@ const productData = products.map((product) => ({
   description: decodeText(product.shortDescriptionHtml).slice(0, 155),
   image: product.image ? new URL(product.image, siteUrl).href : defaultImage,
   sku: product.productCodes[0] || undefined,
+  product,
 }));
 
 const organizationSchema = {
@@ -87,7 +88,56 @@ const renderHtml = ({ path, title, description, image = defaultImage, sku }) => 
     .replace(/<meta name="twitter:description" content="[^"]*"\s*\/>/, `<meta name="twitter:description" content="${escapeHtml(description)}" />`)
     .replace(/<meta name="twitter:image" content="[^"]*"\s*\/>/, `<meta name="twitter:image" content="${image}" />`)
     .replace(/<link rel="canonical" href="[^"]*"\s*\/>/, `<link rel="canonical" href="${canonical}" />`)
-    .replace("</head>", `    <script id="structured-data" type="application/ld+json">${JSON.stringify(schema).replaceAll("<", "\\u003c")}</script>\n  </head>`);
+    .replace("</head>", `    <script id="structured-data" type="application/ld+json">${JSON.stringify(schema).replaceAll("<", "\\u003c")}</script>\n  </head>`)
+    .replace('<div id="root"></div>', `<div id="root">${renderStaticFallback({ path, title, description })}</div>`);
+};
+
+const staticLink = (href, label) => `<a href="${href}">${escapeHtml(label)}</a>`;
+
+const renderStaticProductCard = (product) => {
+  const tds = product.documents.find((document) => document.type === "TDS" && document.href);
+  const sds = product.documents.find((document) => document.type === "SDS");
+  return `<article>
+      <h2>${escapeHtml(decodeText(product.name))}</h2>
+      <p>${escapeHtml(decodeText(product.shortDescriptionHtml))}</p>
+      <p>${staticLink(product.href, "View product")}${tds ? ` ${staticLink(tds.href, "Download TDS")}` : ""} ${sds ? staticLink(`/contact-us/?product=${encodeURIComponent(product.name)}&code=${encodeURIComponent(product.productCodes[0] || "")}&document=SDS#quote`, "Request SDS") : ""}</p>
+    </article>`;
+};
+
+const renderStaticFallback = ({ path, title, description }) => {
+  const product = products.find((item) => item.href === path);
+  if (product) {
+    const tds = product.documents.find((document) => document.type === "TDS" && document.href);
+    const sds = product.documents.find((document) => document.type === "SDS");
+    return `<main class="static-fallback">
+      <h1>${escapeHtml(decodeText(product.name))}</h1>
+      <p>${escapeHtml(description)}</p>
+      <h2>Multiple uses for product</h2>
+      <ul>${product.uses.map((use) => `<li>${escapeHtml(use)}</li>`).join("")}</ul>
+      <p>${staticLink("/products/", "Browse products")} ${staticLink(`/contact-us/?product=${encodeURIComponent(product.name)}&code=${encodeURIComponent(product.productCodes[0] || "")}#quote`, "Request a quote")}${tds ? ` ${staticLink(tds.href, "Download TDS")}` : ""} ${sds ? staticLink(`/contact-us/?product=${encodeURIComponent(product.name)}&code=${encodeURIComponent(product.productCodes[0] || "")}&document=SDS#quote`, "Request SDS") : ""}</p>
+    </main>`;
+  }
+
+  if (path === "/products/") {
+    return `<main class="static-fallback">
+      <h1>Product Catalog</h1>
+      <p>${escapeHtml(description)}</p>
+      ${products.map(renderStaticProductCard).join("\n")}
+    </main>`;
+  }
+
+  const routeHeading = title.replace(/ \| Mid South Lubricants$/, "");
+  const links = [
+    ["/products/", "Browse Products"],
+    ["/contact-us/#quote", "Request a Quote"],
+    ["/about-us/", "About Us"],
+    ["/faqs/", "FAQ"],
+  ];
+  return `<main class="static-fallback">
+    <h1>${escapeHtml(routeHeading)}</h1>
+    <p>${escapeHtml(description)}</p>
+    <nav aria-label="Static page links">${links.map(([href, label]) => staticLink(href, label)).join(" ")}</nav>
+  </main>`;
 };
 
 const allRoutes = [

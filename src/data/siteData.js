@@ -37,6 +37,7 @@ const documentsFor = ({ tds = null, sds = [] }) => [
     title: "Technical Data Sheet",
     description: "Product properties, performance data, and recommended applications.",
     href: tds,
+    action: tds ? "download" : "request",
   },
   ...(sds.length ? sds : [{
     title: "Safety Data Sheet",
@@ -46,6 +47,9 @@ const documentsFor = ({ tds = null, sds = [] }) => [
     type: "SDS",
     description: "Safety, handling, storage, and emergency information.",
     ...document,
+    sourceHref: document.href || null,
+    href: null,
+    action: "request",
   })),
 ];
 
@@ -88,6 +92,46 @@ const packageTypes = [
   ["275 Gallon Tote", "275T"],
 ];
 
+const fallbackImagesByCategory = [
+  ["Freezer Lubes", "/images/application-cold.webp"],
+  ["Thermal Fluid", "/images/application-heat.webp"],
+  ["Compressor Fluid", "/images/application-compressor.webp"],
+  ["Vacuum Pump Lubricant", "/images/application-compressor.webp"],
+  ["Refrigeration Oil", "/images/product-ammonia-oil.webp"],
+  ["Gear Fluid", "/images/product-chain-lubricant.webp"],
+  ["Grease", "/images/product-food-grade-grease.webp"],
+  ["Penetrating Lubricant", "/images/technician-bearing.webp"],
+  ["Hydraulic Fluid", "/images/product-hydraulic-fluid.webp"],
+  ["Mineral Oil", "/images/product-hydraulic-fluid.webp"],
+];
+
+const genericProductImages = new Set([
+  "/images/catalog/mid-south-container-family.webp",
+  "/images/products-group.webp",
+]);
+
+const imageForCategories = (categories = []) => (
+  fallbackImagesByCategory.find(([category]) => categories.includes(category))?.[1]
+  || "/images/catalog/mid-south-container-family.webp"
+);
+
+const inferredCategoriesFor = (details) => {
+  const text = `${details.name} ${details.shortDescriptionHtml || ""} ${details.descriptionHtml || ""} ${(details.features || []).join(" ")}`.toLowerCase();
+  const categories = [];
+  if (/food-grade|food grade|\bh1\b|ht-1|incidental food/.test(text)) categories.push("Food Grade");
+  if (/hydraulic/.test(text)) categories.push("Hydraulic Fluid");
+  if (/compressor/.test(text)) categories.push("Compressor Fluid");
+  if (/gear/.test(text)) categories.push("Gear Fluid");
+  if (/grease/.test(text)) categories.push("Grease");
+  if (/freezer|low-temperature|low temperature|-40|cold/.test(text)) categories.push("Low Temperature");
+  if (/high-temperature|high temperature|heat transfer|thermal|flash/.test(text)) categories.push("High Temperature");
+  if (/heat transfer|thermal/.test(text)) categories.push("Thermal Fluid");
+  if (/fire-resistant|fire resistant/.test(text)) categories.push("Fire Resistant");
+  if (/biodegradable/.test(text)) categories.push("Biodegradable");
+  if (/refrigeration|ammonia/.test(text)) categories.push("Refrigeration Oil");
+  return categories;
+};
+
 const packageSkusFor = (primaryCode) => {
   const base = packageSkuBases.get(primaryCode);
   if (!base) return [];
@@ -99,21 +143,35 @@ const mslFirstName = (name, primaryCode) => {
   return `${primaryCode} - ${name}`;
 };
 
-const product = ({ tds, sds, ...details }) => ({
-  ...productDefaults,
-  ...details,
-  name: mslFirstName(details.name, details.productCodes?.[0]),
-  packageSkus: details.packageSkus ?? packageSkusFor(details.productCodes?.[0]),
-  href: `/product/${details.slug}/`,
-  documents: documentsFor({ tds, sds }),
-});
+const product = ({ tds, sds, ...details }) => {
+  const categories = [...new Set([...(details.categories || []), ...inferredCategoriesFor(details)])];
+  const image = details.image && !genericProductImages.has(details.image)
+    ? details.image
+    : imageForCategories(categories);
+
+  return {
+    ...productDefaults,
+    ...details,
+    image,
+    categories,
+    uses: details.uses || [
+      `${categories[0] || "General"} application - client use case pending`,
+      "Secondary equipment use - client use case pending",
+      "Operating-condition use - client use case pending",
+    ],
+    name: mslFirstName(details.name, details.productCodes?.[0]),
+    packageSkus: details.packageSkus ?? packageSkusFor(details.productCodes?.[0]),
+    href: `/product/${details.slug}/`,
+    documents: documentsFor({ tds, sds }),
+  };
+};
 
 export const products = [
   product({
     id: "msl-c3",
     name: "MSL-C3 Food-Grade Heat Transfer Fluid",
     slug: "msl-c3-food-grade-heat-transfer-fluid",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/application-heat.webp",
     tds: "/documents/tds/MSL-C3-technical-data-sheet.pdf",
     sds: [{ title: "Safety Data Sheet", href: "/documents/sds/msl-c3-food-grade-heat-transfer-fluid-sds.pdf" }],
     shortDescriptionHtml: "<p>An HT-1 food-grade heat transfer fluid rated for applications with bulk temperatures up to 621°F (327°C).</p>",
@@ -126,7 +184,7 @@ export const products = [
     id: "msl-c5",
     name: "MSL-C5 High-Flash Food-Grade Heat Transfer Fluid",
     slug: "msl-c5-high-flash-food-grade-heat-transfer-fluid",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/application-heat.webp",
     tds: "/documents/tds/MSL-C5-technical-data-sheet.pdf",
     sds: [{ title: "Safety Data Sheet", href: "/documents/sds/msl-c5-high-flash-food-grade-heat-transfer-fluid-sds.pdf" }],
     shortDescriptionHtml: "<p>A high-flash food-grade heat transfer fluid for open and closed systems operating at very high temperatures.</p>",
@@ -168,7 +226,7 @@ export const products = [
     id: "msl-2032",
     name: "Synthetic EP Gear Fluid",
     slug: "synthetic-ep-gear-fluid",
-    image: "/images/products-group.webp",
+    image: "/images/product-chain-lubricant.webp",
     sds: [{ title: "Safety Data Sheet", href: "/documents/sds/2032-synthetic-ep-gear-fluid-sds.pdf" }],
     shortDescriptionHtml: "<p>A synthetic extreme-pressure gear fluid for heavy-load and high-temperature industrial applications.</p>",
     descriptionHtml: "<p>MSL-2032 combines enhanced extreme-pressure additives with a long-life synthetic formulation for demanding gear service. It is designed to maintain film strength, resist water contamination, and control carbon and varnish.</p><p><b>Available grades:</b> ISO 150, 220, 320, and 460.</p>",
@@ -219,7 +277,7 @@ export const products = [
     id: "msl-2066",
     name: "Synthetic Penetrating Lubricant",
     slug: "synthetic-penetrating-lubricant",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/product-hydraulic-fluid.webp",
     shortDescriptionHtml: "<p>A quote-based synthetic penetrating lubricant for industrial maintenance applications.</p>",
     descriptionHtml: "<p>MSL-2066 is cataloged as a synthetic penetrating lubricant. Contact Mid South for available package sizes, technical documentation, and application guidance.</p>",
     categories: ["Penetrating Lubricant"],
@@ -254,7 +312,7 @@ export const products = [
     id: "msl-2284",
     name: "Synthetic Biodegradable Hydraulic Fluid",
     slug: "synthetic-biodegradable-hydraulic-fluid",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/catalog/Synthetic-Biodegradable-Hydraulic-Fluid-sm.webp",
     shortDescriptionHtml: "<p>A zinc-free synthetic biodegradable fluid for hydraulic systems operating under severe conditions.</p>",
     descriptionHtml: "<p>MSL-2284SBAWHF combines synthetic base fluids and additives for long fluid life, water separation, low volatility, and protection against wear, rust, corrosion, carbon, and varnish deposits.</p><p><b>Available grades:</b> ISO 32, 46, and 68.</p>",
     categories: ["Hydraulic Fluid"],
@@ -305,7 +363,7 @@ export const products = [
     id: "msl-4584",
     name: "Synthetic Fire-Resistant Food-Grade Hydraulic Fluid",
     slug: "synthetic-fire-resistant-food-grade-hydraulic-fluid",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/catalog/Synthetic-Fire-Resistant-Food-Grade-Hydraulic-Fluid-sm.webp",
     shortDescriptionHtml: "<p>A biodegradable fire-resistant hydraulic fluid formulated for food-processing equipment and broad operating temperatures.</p>",
     descriptionHtml: "<p>MSL-4584SFRGHF is formulated to meet H1 requirements for incidental food contact and FDA 21 CFR 178.3570. It provides oxidative stability, corrosion resistance, anti-wear protection, and water separation for demanding hydraulic systems.</p><p><b>SKU note:</b> supplied package SKUs use the MSL-4584FRFGHF base code.</p>",
     categories: ["Hydraulic Fluid"],
@@ -339,7 +397,7 @@ export const products = [
     id: "msl-3045",
     name: "Synthetic High-Temperature Silica Gel Grease",
     slug: "synthetic-high-temperature-silica-gel-grease",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/catalog/Synthetic-High-Temperature-Silica-Gel-Grease_.webp",
     shortDescriptionHtml: "<p>A food-grade semi-fluid silica-gel grease for high-temperature bearing applications.</p>",
     descriptionHtml: "<p>MSL-3045SHTSGG combines synthetic base stocks, silica-gel thickeners, and performance additives for thermal stability, water resistance, film strength, and corrosion control in severe service.</p><p>The formulation meets H1 requirements for incidental food contact and complies with FDA 21 CFR 178.3570.</p>",
     categories: ["Grease"],
@@ -385,7 +443,7 @@ export const products = [
     id: "msl-6066",
     name: "Synthetic Food-Grade Penetrating Lubricant",
     slug: "synthetic-food-grade-penetrating-lubricant",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/product-hydraulic-fluid.webp",
     shortDescriptionHtml: "<p>A quote-based synthetic food-grade penetrating lubricant for maintenance applications.</p>",
     descriptionHtml: "<p>MSL-6066 is cataloged as a synthetic food-grade penetrating lubricant. Contact Mid South to confirm application requirements, available package sizes, and the current technical and safety documentation.</p>",
     categories: ["Penetrating Lubricant"],
@@ -420,7 +478,7 @@ export const products = [
     id: "msl-6488",
     name: "Low-Temperature Synthetic Silicone Freezer Lubricant",
     slug: "low-temperature-synthetic-silicone-freezer-lubricant",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/catalog/Low-Temperature-Synthetic-Silicone-Freezer-Lubricant-sm.webp",
     shortDescriptionHtml: "<p>A food-grade silicone lubricant formulated for spiral freezers operating from -40°F to -80°F.</p>",
     descriptionHtml: "<p>MSL-6488LTSSFL provides clean lubrication, film strength, wear protection, and deposit control in severe low-temperature freezer applications. It meets H1 requirements for incidental food contact.</p>",
     categories: ["Freezer Lubes"],
@@ -443,7 +501,7 @@ export const products = [
     id: "msl-c12",
     name: "MSL-C12 Food-Grade Low-Temperature Heat Transfer Fluid",
     slug: "msl-c12-food-grade-low-temperature-heat-transfer-fluid",
-    image: "/images/catalog/mid-south-container-family.webp",
+    image: "/images/application-heat.webp",
     sds: [{ title: "Safety Data Sheet", href: "/documents/sds/msl-c12-food-grade-low-temperature-heat-transfer-fluid-sds.pdf" }],
     shortDescriptionHtml: "<p>An HT-1 food-grade heat transfer fluid for low-temperature systems operating up to 450°F (232°C).</p>",
     descriptionHtml: "<p>MSL-C12 uses highly pure, clear base fluids free from many impurities and aromatic compounds found in conventional heat transfer oils. It is formulated for efficient heat transfer, clean operation, low-temperature performance, and long fluid life.</p>",
@@ -458,7 +516,10 @@ export const productCategories = [...new Set(products.flatMap((product) => produ
 
 export const catalogCategoryGroups = [
   { label: "All Products", categories: [] },
+  { label: "Food Grade", categories: ["Food Grade"] },
   { label: "Freezer Lubes", categories: ["Freezer Lubes"] },
+  { label: "Low Temperature", categories: ["Low Temperature"] },
+  { label: "High Temperature", categories: ["High Temperature"] },
   { label: "Mineral Oil", categories: ["Mineral Oil"] },
   { label: "Compressor Fluid", categories: ["Compressor Fluid"] },
   { label: "Gear Fluid", categories: ["Gear Fluid"] },
@@ -467,6 +528,8 @@ export const catalogCategoryGroups = [
   { label: "Thermal Fluid", categories: ["Thermal Fluid"] },
   { label: "Penetrating Lubricant", categories: ["Penetrating Lubricant"] },
   { label: "Hydraulic Fluid", categories: ["Hydraulic Fluid"] },
+  { label: "Fire Resistant", categories: ["Fire Resistant"] },
+  { label: "Biodegradable", categories: ["Biodegradable"] },
   { label: "Grease", categories: ["Grease"] },
 ];
 

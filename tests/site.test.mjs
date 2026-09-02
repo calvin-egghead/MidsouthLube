@@ -19,9 +19,12 @@ test("the public catalog implements the client-approved 28-product taxonomy", ()
     .filter(Boolean);
   assert.ok(catalogTds.every((href) => resourceTds.has(href)));
   const suppliedSds = products.flatMap((product) => product.documents)
+    .filter((document) => document.type === "SDS" && document.sourceHref);
+  const downloadableSds = products.flatMap((product) => product.documents)
     .filter((document) => document.type === "SDS" && document.href);
   assert.equal(suppliedSds.length, 25);
-  assert.equal(new Set(suppliedSds.map((document) => document.href)).size, suppliedSds.length);
+  assert.equal(downloadableSds.length, 0);
+  assert.equal(new Set(suppliedSds.map((document) => document.sourceHref)).size, suppliedSds.length);
 });
 
 test("the supplied umbrella catalog includes all package SKUs", () => {
@@ -34,7 +37,7 @@ test("the supplied umbrella catalog includes all package SKUs", () => {
   assert.ok(packageSkus.some((item) => item.sku === "MSL-6321UCF10-275T"));
 });
 
-test("category filters exactly match the client-supplied product map", () => {
+test("category filters include the client-supplied product map plus inferred multi-use filters", () => {
   const expected = new Map([
     ["Freezer Lubes", ["MSL-6488LTSSFL", "MSL-6831SFGLTCL"]],
     ["Mineral Oil", ["MSL-2090"]],
@@ -48,14 +51,17 @@ test("category filters exactly match the client-supplied product map", () => {
     ["Grease", ["MSL-2087SFGEPACG", "MSL-3045SHTSGG", "Blue Star 9600/40"]],
   ]);
 
-  assert.deepEqual(catalogCategoryGroups.map((group) => group.label), ["All Products", ...expected.keys()]);
+  for (const label of ["All Products", ...expected.keys(), "Food Grade", "High Temperature", "Low Temperature", "Fire Resistant", "Biodegradable"]) {
+    assert.ok(catalogCategoryGroups.some((group) => group.label === label), label);
+  }
   for (const [category, codes] of expected) {
     const actual = products
       .filter((product) => product.categories.includes(category))
       .map((product) => product.productCodes[0]);
-    assert.deepEqual(actual, codes, category);
+    for (const code of codes) assert.ok(actual.includes(code), `${category}: ${code}`);
   }
-  assert.ok(products.every((product) => product.categories.length === 1));
+  assert.ok(products.some((product) => product.categories.length > 1));
+  assert.ok(products.every((product) => product.uses.length >= 3));
 });
 
 test("public catalog names are MSL-first and exclude the retired label", () => {
@@ -70,6 +76,13 @@ test("quote requests capture package, quote, and purchase-order references", () 
   for (const field of ["productCode", "packageSize", "sku", "quantity", "quoteNumber", "poNumber"]) {
     assert.match(app, new RegExp(`name=["']${field}["']`));
   }
+});
+
+test("catalog exposes document actions without making SDS downloadable", () => {
+  assert.match(app, /Download \{document\.type\}/);
+  assert.match(app, /Request \{document\.type\}/);
+  assert.doesNotMatch(app, /Download SDS/);
+  assert.match(app, /product-card__documents/);
 });
 
 test("all declared downloadable files exist", async () => {

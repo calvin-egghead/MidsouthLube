@@ -24,6 +24,7 @@ for (const file of htmlFiles) {
   for (const required of ['name="description"', 'rel="canonical"', 'property="og:title"', 'id="structured-data"']) {
     if (!html.includes(required)) failures.push(`${file}: missing ${required}`);
   }
+  if (!/<h1[\s>]/.test(html)) failures.push(`${file}: missing static h1 fallback`);
 
   const references = [...html.matchAll(/(?:src|href)="(\/(?!\/)[^"?#]+)(?:[?#][^"]*)?"/g)].map((match) => match[1]);
   for (const reference of references) {
@@ -46,11 +47,16 @@ if (indexedRoutes !== expectedIndexedRoutes) failures.push(`sitemap.xml contains
 if (products.length !== 28) failures.push(`public catalog contains ${products.length} products; expected 28`);
 if (technicalDataSheets.length !== 6) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 6`);
 const safetyDataSheets = products.flatMap((product) => product.documents)
+  .filter((document) => document.type === "SDS" && document.sourceHref);
+const downloadableSafetyDataSheets = products.flatMap((product) => product.documents)
   .filter((document) => document.type === "SDS" && document.href);
-if (safetyDataSheets.length !== 25) failures.push(`product catalog contains ${safetyDataSheets.length} downloadable Safety Data Sheets; expected 25`);
+if (safetyDataSheets.length !== 25) failures.push(`product catalog contains ${safetyDataSheets.length} source Safety Data Sheets; expected 25`);
+if (downloadableSafetyDataSheets.length) failures.push("Safety Data Sheets must route through request workflow, not direct downloads");
 for (const product of products) {
   const documentTypes = new Set(product.documents.map((document) => document.type));
   if (!documentTypes.has("TDS") || !documentTypes.has("SDS")) failures.push(`${product.slug}: missing TDS or SDS workflow`);
+  if (!product.uses?.length) failures.push(`${product.slug}: missing product use placeholders`);
+  if (!product.image) failures.push(`${product.slug}: missing product image`);
 }
 
 const packageSkus = products.flatMap((product) => product.packageSkus);
