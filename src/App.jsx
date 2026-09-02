@@ -16,7 +16,7 @@ const contactPhone = "(318) 614-7948";
 const contactPhoneHref = "tel:+13186147948";
 const contactAddress = "1122 Garland Gin Road, Downsville, LA 71234";
 const siteUrl = "https://midsouthlube.com";
-const socialImage = `${siteUrl}/images/authentic/hero-poultry-brand.webp`;
+const socialImage = `${siteUrl}/images/hero-facility.webp`;
 
 const routeMeta = {
   "/": [
@@ -537,33 +537,31 @@ function HomePage({ navigate }) {
   return (
     <>
       <section className="home-hero" aria-labelledby="home-title">
-        <h1 id="home-title" className="sr-only">Premium Lubricants for Poultry Processing</h1>
         <picture className="home-hero__picture">
-          <source media="(max-width: 767px)" srcSet="/images/company/processing-line.jpg" type="image/jpeg" />
           <img
             className="home-hero__background"
-            src="/images/authentic/hero-poultry-brand.webp"
-            alt="Premium lubricants for poultry processing"
-            width="2560"
-            height="1440"
+            src="/images/hero-facility.webp"
+            alt="Technician servicing industrial production equipment"
+            width="1448"
+            height="1086"
             fetchPriority="high"
           />
         </picture>
-        <div className="home-hero__mobile-content" aria-hidden="true">
+        <div className="home-hero__content">
           <img
-            className="home-hero__mobile-logo"
+            className="home-hero__logo"
             src="/images/mid-south-logo.webp"
             alt="Mid South Lubricants logo"
             width="270"
             height="270"
             fetchPriority="high"
           />
-          <div className="home-hero__mobile-message">
-            <p className="home-hero__mobile-title">
+          <div className="home-hero__message">
+            <h1 id="home-title" className="home-hero__title">
               <span>Premium lubricants</span>
               for poultry processing
-            </p>
-            <p className="home-hero__mobile-tagline">
+            </h1>
+            <p className="home-hero__tagline">
               Engineered for performance. Trusted in every plant.
             </p>
           </div>

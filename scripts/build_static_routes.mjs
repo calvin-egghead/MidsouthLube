@@ -6,7 +6,7 @@ import { products } from "../src/data/siteData.js";
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = resolve(projectRoot, "dist");
 const siteUrl = "https://midsouthlube.com";
-const defaultImage = `${siteUrl}/images/authentic/hero-poultry-brand.webp`;
+const defaultImage = `${siteUrl}/images/hero-facility.webp`;
 
 const baseHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
 
