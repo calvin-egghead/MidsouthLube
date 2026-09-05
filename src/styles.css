@@ -2311,6 +2311,10 @@ textarea[aria-invalid="true"] {
   font-size: 13px;
 }
 
+.footer-bottom p a {
+  color: #fff;
+}
+
 .footer-bottom div {
   display: flex;
   gap: 24px;

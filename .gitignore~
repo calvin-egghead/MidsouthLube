@@ -2,7 +2,6 @@
 .npm-cache
 dist 
 node-modules
-node-modules/*
 old-site-archive
 tests
 tmp

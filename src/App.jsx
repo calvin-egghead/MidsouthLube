@@ -419,7 +419,9 @@ function Footer({ navigate }) {
       </div>
       <div className="footer-bottom">
         <p>© 2026 Mid South Lubricants. All rights reserved.</p>
-        <p>Created by Egghead Creative</p>
+        <p>
+          Website by <a href="https://www.eggheadvideoproduction.com/">Egghead Creative</a>
+        </p>
         <div>
           <Link href="/privacy-policy/" navigate={navigate}>Privacy Policy</Link>
           <Link href="/terms/" navigate={navigate}>Terms</Link>
