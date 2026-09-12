@@ -45,7 +45,10 @@ const indexedRoutes = (sitemap.match(/<loc>/g) || []).length;
 const expectedIndexedRoutes = 8 + products.length;
 if (indexedRoutes !== expectedIndexedRoutes) failures.push(`sitemap.xml contains ${indexedRoutes} routes; expected ${expectedIndexedRoutes}`);
 if (products.length !== 28) failures.push(`public catalog contains ${products.length} products; expected 28`);
-if (technicalDataSheets.length !== 6) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 6`);
+if (technicalDataSheets.length !== 24) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 24`);
+const requestTechnicalDataSheets = products.flatMap((product) => product.documents)
+  .filter((document) => document.type === "TDS" && document.action === "request");
+if (requestTechnicalDataSheets.length !== 4) failures.push(`product catalog contains ${requestTechnicalDataSheets.length} request-only Technical Data Sheets; expected 4`);
 const safetyDataSheets = products.flatMap((product) => product.documents)
   .filter((document) => document.type === "SDS" && document.sourceHref);
 const downloadableSafetyDataSheets = products.flatMap((product) => product.documents)
