@@ -1,5 +1,7 @@
 # TDS catalog identity audit
 
+> Historical baseline from before the September 24, 2026 replacement folder. For the current 34-product catalog, document coverage, and open findings, use [the revision checklist](product-audit-revision-checklist.md) and [source inventory](source-document-inventory.md). Counts and missing-file statements below describe the earlier 28-product version.
+
 The headings and identifiers printed inside the supplied Technical Data Sheets are authoritative. This audit covers all 24 catalog products with supplied TDSs, including the Blue Star sheet previously withheld because the client list used a different designation. No PDFs have been edited.
 
 ## Verified catalog identities

@@ -31,7 +31,7 @@ To enable Google Tag Manager, copy `.env.example` to `.env.local` and set `VITE_
 
 ## Technical documents
 
-The public catalog maps the client-approved 28 products into ten customer-facing categories. It provides 24 downloadable Technical Data Sheets under `public/documents/tds/`; the four products without a supplied TDS retain the document-request workflow. Supplied TDS headings are authoritative for product names and codes. Package SKUs are retained separately from those base product codes, and existing product URLs remain stable. Safety Data Sheets remain request-only even when a source file is available. The catalog also includes 60 package SKUs for the 15 products represented in the Mid South SKU directory. Missing data must never be created or inferred from marketing copy. See `docs/tds-catalog-audit.md` for the document identity audit.
+The public catalog contains 34 products and 33 downloadable Technical Data Sheets under `public/documents/tds/`; FRH-46 retains a Request TDS action because its sheet was not supplied. Safety Data Sheets remain request-only. Their source PDFs are stored under `source-documents/sds/` outside the published site. The catalog includes 68 verified package SKUs across 18 products from the Mid South SKU directory and supplied labels; products without verified SKUs remain quote-only. See `docs/product-audit-revision-checklist.md` for implementation status and `docs/source-document-inventory.md` for missing, unused, and inconsistent files.
 
 ## Before publication
 

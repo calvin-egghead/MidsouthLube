@@ -3,12 +3,8 @@
     { "source": "/product/caldera-3-food-grade-heat-transfer-fluid/", "destination": "/product/msl-c3-food-grade-heat-transfer-fluid/", "permanent": true },
     { "source": "/product/caldera-5-high-flash-food-grade-heat-transfer-fluid/", "destination": "/product/msl-c5-high-flash-food-grade-heat-transfer-fluid/", "permanent": true },
     { "source": "/product/caldera-12-food-grade-low-temperature-heat-transfer-fluid/", "destination": "/product/msl-c12-food-grade-low-temperature-heat-transfer-fluid/", "permanent": true },
-    { "source": "/product/msl-c13-heat-transfer-oil/", "destination": "/products/", "permanent": true },
-    { "source": "/product/msl-rescue-htf-hd-heat-transfer-cleaner-concentrate/", "destination": "/products/", "permanent": true },
-    { "source": "/product/snfg-series-synthetic-food-grade-oils/", "destination": "/products/", "permanent": true },
-    { "source": "/product/synthetic-food-grade-chain-lubricant-with-tackifier/", "destination": "/products/", "permanent": true },
-    { "source": "/product/semi-synthetic-food-grade-aw-hydraulic-fluid/", "destination": "/products/", "permanent": true },
-    { "source": "/product/synthetic-food-grade-ep-calcium-sulfonate-grease/", "destination": "/products/", "permanent": true }
+    { "source": "/product/blue-star-9600-40-grease/", "destination": "/product/blue-star-xh-9650-460-1-5/", "permanent": true },
+    { "source": "/product/food-grade-high-temperature-gear-lubricant/", "destination": "/product/synthetic-food-grade-gear-fluid/", "permanent": true }
   ],
   "routes": [
     { "handle": "filesystem" },

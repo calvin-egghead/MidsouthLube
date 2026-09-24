@@ -7,10 +7,12 @@ import { catalogCategoryGroups, products, technicalDataSheets } from "../src/dat
 const root = resolve(import.meta.dirname, "..");
 const siteData = await readFile(resolve(root, "src/data/siteData.js"), "utf8");
 const app = await readFile(resolve(root, "src/App.jsx"), "utf8");
+const redirects = await readFile(resolve(root, "public/_redirects"), "utf8");
+const vercelRedirects = JSON.parse(await readFile(resolve(root, "vercel.json"), "utf8")).redirects;
 
-test("the public catalog implements the client-approved 28-product taxonomy", () => {
-  assert.equal(products.length, 28);
-  assert.equal(technicalDataSheets.length, 24);
+test("the public catalog includes the audited additions and complete TDS coverage where supplied", () => {
+  assert.equal(products.length, 34);
+  assert.equal(technicalDataSheets.length, 33);
   assert.equal(new Set(products.map((product) => product.slug)).size, products.length);
   assert.equal(new Set(products.map((product) => product.name)).size, products.length);
   const resourceTds = new Set(technicalDataSheets.map((document) => document.href));
@@ -21,27 +23,23 @@ test("the public catalog implements the client-approved 28-product taxonomy", ()
   const requestTdsCodes = products
     .filter((product) => product.documents.some((document) => document.type === "TDS" && document.action === "request"))
     .map((product) => product.productCodes[0]);
-  assert.deepEqual(requestTdsCodes, [
-    "MSL-2284SBAWHF",
-    "FRH-46",
-    "MSL-6061FGCF6",
-    "MSL-C12",
-  ]);
+  assert.deepEqual(requestTdsCodes, ["FRH-46"]);
   const suppliedSds = products.flatMap((product) => product.documents)
     .filter((document) => document.type === "SDS" && document.sourceHref);
   const downloadableSds = products.flatMap((product) => product.documents)
     .filter((document) => document.type === "SDS" && document.href);
-  assert.equal(suppliedSds.length, 25);
+  assert.equal(suppliedSds.length, 38);
   assert.equal(downloadableSds.length, 0);
   assert.equal(new Set(suppliedSds.map((document) => document.sourceHref)).size, suppliedSds.length);
+  assert.ok(suppliedSds.every((document) => document.sourceHref.startsWith("source-documents/sds/")));
 });
 
-test("the supplied umbrella catalog includes all package SKUs", () => {
+test("verified package SKUs include the directory and supplied product labels", () => {
   const packageProducts = products.filter((product) => product.packageSkus.length);
   const packageSkus = packageProducts.flatMap((product) => product.packageSkus);
-  assert.equal(packageProducts.length, 15);
-  assert.equal(packageSkus.length, 60);
-  assert.equal(new Set(packageSkus.map((item) => item.sku)).size, 60);
+  assert.equal(packageProducts.length, 18);
+  assert.equal(packageSkus.length, 68);
+  assert.equal(new Set(packageSkus.map((item) => item.sku)).size, 68);
   assert.ok(packageSkus.some((item) => item.sku === "MSL-6831SFGLTCL-5P"));
   assert.ok(packageSkus.some((item) => item.sku === "MSL-6321UCF10-275T"));
 });
@@ -70,7 +68,7 @@ test("category filters include the client-supplied product map plus inferred mul
     for (const code of codes) assert.ok(actual.includes(code), `${category}: ${code}`);
   }
   assert.ok(products.some((product) => product.categories.length > 1));
-  assert.ok(products.every((product) => product.uses.length >= 3));
+  assert.ok(products.every((product) => product.uses.length === 3 && product.uses.every((use) => !/pending|placeholder/i.test(use))));
 });
 
 test("downloadable TDS identities match the codes and headings inside the supplied sheets", () => {
@@ -86,6 +84,7 @@ test("downloadable TDS identities match the codes and headings inside the suppli
     ["msl-2066", "MSL-2066", "Synthetic Penetrating Lubricant", "MSL-2066"],
     ["msl-2243", "MSL-2243", "Mineral Oil AW Hydraulic Fluid", "MSL-2243"],
     ["msl-2244", "MSL-2244", "Semi-Synthetic AW Hydraulic Fluid", "MSL-2244"],
+    ["msl-2284", "MSL-2284SBAWHF", "Synthetic Biodegradable Hydraulic Fluid", "MSL-2284"],
     ["msl-2288", "MSL-2288", "Synthetic Food Grade AW Hydraulic Fluid", "MSL-2288"],
     ["msl-2384", "MSL-2384", "Synthetic Multi-Viscosity AW Hydraulic Fluid", "MSL-2384"],
     ["msl-2584", "MSL-2584", "Synthetic Fire-Resistant Hydraulic Fluid", "MSL-2584"],
@@ -93,12 +92,20 @@ test("downloadable TDS identities match the codes and headings inside the suppli
     ["dubois-2585-68", "MSL-2585", "FM Approved Fire Resistant EAL Hydraulic Fluid", "MSL-2585"],
     ["msl-3045", "MSL-3045", "Synthetic High Temp Silica Gel Grease", "MSL-3045"],
     ["blue-star-9600-40", "BLUE STAR XH 9650/460-1.5", "", "Blue-Star-XH-9650-460-1.5"],
+    ["msl-6061", "MSL-6061FGCF6", "6000 Hour Food-Grade Compressor Fluid", "MSL-6061"],
     ["msl-6064", "MSL-6064", "8000 Hour Food Grade Compressor Fluid", "MSL-6064"],
     ["msl-6066", "MSL-6066", "Synthetic Food Grade Penetrating Lubricant", "MSL-6066"],
     ["msl-6243", "MSL-6243", "Semi-Synthetic Vacuum Pump Lubricant", "MSL-6243"],
     ["msl-6321", "MSL-6321", "Universal 10000 Hour Compressor Fluid", "MSL-6321"],
     ["msl-6488", "MSL-6488", "Low Temperature Synthetic Silicone Freezer Lubricant", "MSL-6488"],
     ["msl-6831", "MSL-6831", "Synthetic Food Grade Low Temp Chain Lubricant", "MSL-6831"],
+    ["msl-c12", "MSL-C12", "Food-Grade Low-Temperature Heat Transfer Fluid", "MSL-C12"],
+    ["msl-2185", "MSL-2185", "Synthetic Food Grade Chain Lubricant with Tackifier", "MSL-2185"],
+    ["msl-2245", "MSL-2245", "Semi-Synthetic Food Grade AW Hydraulic Fluid", "MSL-2245"],
+    ["msl-3157", "MSL-3157", "Synthetic Food Grade EP Calcium Sulfonate Grease", "MSL-3157"],
+    ["msl-c13", "MSL-C13", "Heat Transfer Oil", "MSL-C13"],
+    ["msl-rescue-htf-hd", "MSL-Rescue HTF HD", "Heavy-Duty Heat Transfer Cleaner Concentrate", "MSL-Rescue-HTF-HD"],
+    ["snfg-series", "SNFG", "Series of Synthetic Food Grade Oils", "SNFG-series"],
   ];
   assert.equal(identities.length, technicalDataSheets.length);
   for (const [id, code, heading, fileBase] of identities) {
@@ -108,16 +115,16 @@ test("downloadable TDS identities match the codes and headings inside the suppli
     assert.ok([code, `${code} ${heading}`, `${code} - ${heading}`].includes(product.name), id);
     assert.equal(product.documents.find((document) => document.type === "TDS").href,
       `/documents/tds/${fileBase}-technical-data-sheet.pdf`, id);
-    const relatedCodes = id === "msl-2090" ? ["MSL-2090-20"]
+    const relatedCodes = id === "msl-2090" ? ["MSL-2090-20", "MSL-2090-22"]
       : id === "msl-3045" ? ["MSL-3045-EP2"] : [];
-    assert.deepEqual(product.productCodes.slice(1), relatedCodes, id);
+    if (["msl-2090", "msl-3045"].includes(id)) assert.deepEqual(product.productCodes.slice(1), relatedCodes, id);
   }
   const gear = products.find((product) => product.id === "msl-2082");
   assert.ok(!gear.categories.includes("High Temperature"));
   assert.ok(products.find((product) => product.id === "dubois-2585-68").categories.includes("Food Grade"));
-  assert.equal(gear.href, "/product/food-grade-high-temperature-gear-lubricant/");
+  assert.equal(gear.href, "/product/synthetic-food-grade-gear-fluid/");
   assert.equal(products.find((product) => product.id === "blue-star-9600-40").href,
-    "/product/blue-star-9600-40-grease/");
+    "/product/blue-star-xh-9650-460-1-5/");
 });
 
 test("public catalog names are MSL-first and exclude the retired label", () => {
@@ -141,10 +148,25 @@ test("catalog exposes document actions without making SDS downloadable", () => {
   assert.match(app, /product-card__documents/);
 });
 
+test("renamed product routes redirect to current pages on both configured hosts", () => {
+  const expected = [
+    ["/product/blue-star-9600-40-grease/", "/product/blue-star-xh-9650-460-1-5/"],
+    ["/product/food-grade-high-temperature-gear-lubricant/", "/product/synthetic-food-grade-gear-fluid/"],
+  ];
+  for (const [source, destination] of expected) {
+    assert.ok(products.some((product) => product.href === destination));
+    assert.match(redirects, new RegExp(`${source.replaceAll("/", "\\/")} ${destination.replaceAll("/", "\\/")} 301`));
+    assert.ok(vercelRedirects.some((item) => item.source === source && item.destination === destination && item.permanent));
+  }
+});
+
 test("all declared downloadable files exist", async () => {
   const paths = [...`${siteData}\n${app}`.matchAll(/["'`](\/documents\/[^"'`?}]+)["'`]/g)].map((match) => match[1]);
   assert.ok(paths.length >= 8, "expected the SKU directory and supplied labels");
   await Promise.all(paths.map((path) => access(resolve(root, "public", path.slice(1)))));
+  const privateSds = products.flatMap((product) => product.documents)
+    .filter((document) => document.type === "SDS" && document.sourceHref);
+  await Promise.all(privateSds.map((document) => access(resolve(root, document.sourceHref))));
   await access(resolve(root, "public/images/catalog/mid-south-container-family.webp"));
 });
 

@@ -94,7 +94,7 @@ const productMatchesGroup = (product, group) => (
   !group?.categories.length || group.categories.some((category) => product.categories.includes(category))
 );
 
-const quoteHrefFor = (product, selectedPackage = null, documentType = "") => {
+const quoteHrefFor = (product, selectedPackage = null, documentType = "", documentTitle = "") => {
   const params = new URLSearchParams({
     product: product.name,
     code: product.productCodes[0] || "",
@@ -104,6 +104,11 @@ const quoteHrefFor = (product, selectedPackage = null, documentType = "") => {
     params.set("package", selectedPackage.packaging);
   }
   if (documentType) params.set("document", documentType);
+  if (documentTitle) {
+    params.set("document_title", documentTitle);
+    const grade = documentTitle.match(/(?:ISO|Grade)\s*\d+/i)?.[0];
+    if (grade) params.set("grade", grade);
+  }
   return `/contact-us/?${params.toString()}#quote`;
 };
 
@@ -276,7 +281,7 @@ function DocumentAction({ product, document, navigate, variant = "secondary", co
     return <a className={className} href={document.href} download>Download {document.type}</a>;
   }
   return (
-    <Link className={className} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
+    <Link className={className} href={quoteHrefFor(product, null, document.type, document.title)} navigate={navigate}>
       Request {document.type}
     </Link>
   );
@@ -742,7 +747,7 @@ function ProductCatalog({ navigate }) {
               <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
               <span>{document.title}</span>
               <b>Download</b>
-            </a> : <Link key={`${product.id}-${document.type}-${document.title}`} href={quoteHrefFor(product, null, document.type)} navigate={navigate}>
+            </a> : <Link key={`${product.id}-${document.type}-${document.title}`} href={quoteHrefFor(product, null, document.type, document.title)} navigate={navigate}>
               <span><strong>{document.type}</strong>{product.productCodes[0]}</span>
               <span>{document.title}</span>
               <b>Request</b>
@@ -1057,6 +1062,8 @@ function ContactForm() {
   const packageSku = searchParams.get("sku") || "";
   const packageSize = searchParams.get("package") || "";
   const documentType = searchParams.get("document") || "";
+  const documentTitle = searchParams.get("document_title") || "";
+  const documentGrade = searchParams.get("grade") || "";
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -1116,13 +1123,13 @@ function ContactForm() {
         <label><span>Product type</span><select name="type" defaultValue="Heat Transfer"><option>Heat Transfer</option><option>Ammonia Refrigeration</option><option>Compressor Oil</option><option>Food-Grade Oil</option><option>Gear Oil</option><option>Hydraulic Oil</option><option>System Cleaner</option><option>Other</option></select></label>
         <label><span>Product</span><input name="product" defaultValue={productName} placeholder="Product name" /></label>
         <label><span>MSL or product code</span><input name="productCode" defaultValue={productCode} placeholder="MSL-6831SFGLTCL" /></label>
-        <label><span>Grade or viscosity</span><input name="grade" placeholder="ISO 15, ISO 46, Grade 68" /></label>
+        <label><span>Grade or viscosity</span><input name="grade" defaultValue={documentGrade} placeholder="ISO 15, ISO 46, Grade 68" /></label>
         <label><span>Package size</span><input name="packageSize" defaultValue={packageSize} placeholder="5 Gallon Pail" /></label>
         <label><span>Package SKU</span><input name="sku" defaultValue={packageSku} placeholder="MSL-6831SFGLTCL-5P" /></label>
         <label><span>Quantity</span><input name="quantity" inputMode="numeric" placeholder="Number of packages" /></label>
         <label><span>Existing quote number</span><input name="quoteNumber" autoComplete="off" /></label>
         <label><span>Purchase order number</span><input name="poNumber" autoComplete="off" /></label>
-        <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={documentType && productName ? `Please send me the current ${documentType} PDF for ${productName}.` : productName ? `I would like information and availability for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
+        <label className="form-grid__wide"><span>Describe your lubricant needs *</span><textarea name="needs" rows="6" defaultValue={documentType && productName ? `Please send me the ${documentTitle || `current ${documentType}`} PDF for ${productName}.` : productName ? `I would like information and availability for ${productName}.` : ""} aria-invalid={Boolean(errors.needs)} aria-describedby={errors.needs ? "needs-error" : undefined} />{errors.needs ? <small id="needs-error" className="field-error">{errors.needs}</small> : null}</label>
       </div>
       <button className="button button--primary" type="submit">Prepare Email</button>
     </form>

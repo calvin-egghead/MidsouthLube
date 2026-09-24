@@ -44,26 +44,34 @@ const sitemap = await readFile(resolve(distRoot, "sitemap.xml"), "utf8");
 const indexedRoutes = (sitemap.match(/<loc>/g) || []).length;
 const expectedIndexedRoutes = 8 + products.length;
 if (indexedRoutes !== expectedIndexedRoutes) failures.push(`sitemap.xml contains ${indexedRoutes} routes; expected ${expectedIndexedRoutes}`);
-if (products.length !== 28) failures.push(`public catalog contains ${products.length} products; expected 28`);
-if (technicalDataSheets.length !== 24) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 24`);
+if (products.length !== 34) failures.push(`public catalog contains ${products.length} products; expected 34`);
+if (technicalDataSheets.length !== 33) failures.push(`resource library contains ${technicalDataSheets.length} Technical Data Sheets; expected 33`);
 const requestTechnicalDataSheets = products.flatMap((product) => product.documents)
   .filter((document) => document.type === "TDS" && document.action === "request");
-if (requestTechnicalDataSheets.length !== 4) failures.push(`product catalog contains ${requestTechnicalDataSheets.length} request-only Technical Data Sheets; expected 4`);
+if (requestTechnicalDataSheets.length !== 1 || !products.find((product) => product.id === "frh-46")?.documents.some((document) => document.type === "TDS" && document.action === "request")) failures.push("FRH-46 should be the only request-only Technical Data Sheet");
 const safetyDataSheets = products.flatMap((product) => product.documents)
   .filter((document) => document.type === "SDS" && document.sourceHref);
 const downloadableSafetyDataSheets = products.flatMap((product) => product.documents)
   .filter((document) => document.type === "SDS" && document.href);
-if (safetyDataSheets.length !== 25) failures.push(`product catalog contains ${safetyDataSheets.length} source Safety Data Sheets; expected 25`);
+if (safetyDataSheets.length !== 38) failures.push(`product catalog contains ${safetyDataSheets.length} source Safety Data Sheets; expected 38`);
 if (downloadableSafetyDataSheets.length) failures.push("Safety Data Sheets must route through request workflow, not direct downloads");
+if (files.some((file) => file.includes("/documents/sds/"))) failures.push("Safety Data Sheets are present in the published build");
+for (const document of safetyDataSheets) {
+  try {
+    await access(resolve(projectRoot, document.sourceHref));
+  } catch {
+    failures.push(`missing private SDS source ${document.sourceHref}`);
+  }
+}
 for (const product of products) {
   const documentTypes = new Set(product.documents.map((document) => document.type));
   if (!documentTypes.has("TDS") || !documentTypes.has("SDS")) failures.push(`${product.slug}: missing TDS or SDS workflow`);
-  if (!product.uses?.length) failures.push(`${product.slug}: missing product use placeholders`);
+  if (product.uses?.length !== 3 || product.uses.some((use) => /pending|placeholder/i.test(use))) failures.push(`${product.slug}: incomplete Application Fit copy`);
   if (!product.image) failures.push(`${product.slug}: missing product image`);
 }
 
 const packageSkus = products.flatMap((product) => product.packageSkus);
-if (packageSkus.length !== 60) failures.push(`product catalog contains ${packageSkus.length} package SKUs; expected 60`);
+if (packageSkus.length !== 68) failures.push(`product catalog contains ${packageSkus.length} package SKUs; expected 68`);
 if (new Set(packageSkus.map((item) => item.sku)).size !== packageSkus.length) failures.push("package SKU directory contains duplicate SKUs");
 
 const appSource = await readFile(resolve(projectRoot, "src/App.jsx"), "utf8");
