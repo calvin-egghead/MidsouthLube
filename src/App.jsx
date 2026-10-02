@@ -580,7 +580,7 @@ function HomePage({ navigate }) {
           <div><strong>Boost Efficiency</strong><span>Advanced oils and fluids keep critical systems running longer</span></div>
           <div><strong>Cut Costs</strong><span>Fewer breakdowns, less maintenance, better margins</span></div>
           <div><strong>Built to Last</strong><span>Engineered for extreme heat, cold, and pressure</span></div>
-          <div><strong>30+ Years</strong><span>Specialty lubricant industry experience</span></div>
+          <div><strong>30+ Years</strong><span>Food industry experience</span></div>
         </div>
       </section>
 
@@ -958,7 +958,7 @@ function AboutPage({ navigate }) {
         </div>
         <div className="story-section__copy" data-reveal>
           <p>After decades of experience in the specialty lubricants industry, we saw an opportunity to do things differently. We wanted to create a company built not only on quality products, but also on trust, service, and relationships. For us, this business isn’t just about selling lubricants; it’s about solving problems, treating people right, and building something lasting for our family and community.</p>
-          <p>Mid South Lubricants was founded with a simple vision: to combine Ray’s 30+ years of expertise with Tracie’s dedication to care and connection, creating a business that feels personal. We believe in working hard, listening to our customers, and growing a company we can one day pass down to the next generation.</p>
+          <p>Mid South Lubricants was founded with a simple vision: to combine Ray’s expertise with Tracie’s dedication to care and connection, creating a business that feels personal. We believe in working hard, listening to our customers, and growing a company we can one day pass down to the next generation.</p>
         </div>
         <div className="story-section__media" data-reveal>
           <img src="/images/authentic/processing-conveyor-overview.webp" alt="Food-processing conveyors installed on a production floor" width="782" height="391" loading="lazy" />
