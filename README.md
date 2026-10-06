@@ -19,7 +19,7 @@ The production build creates static HTML entry points for every public route and
 
 ## Hosting
 
-- Netlify and Cloudflare Pages can use `public/_redirects` as the fallback for unknown client-side routes. Cloudflare requires the catch-all to point at a static `index.html` that already exists for every pre-rendered route (see `scripts/build_static_routes.mjs`), otherwise a `/* /index.html 200` rewrite creates a self-referential redirect loop (build error `100324`).
+- Netlify and Cloudflare Pages use `public/_redirects` for legacy product slug redirects. Cloudflare flags a `/* /index.html 200` catch-all as a redirect loop (build error `100324`) because every route is pre-rendered as `dist/<route>/index.html` by `scripts/build_static_routes.mjs`. The catch-all is intentionally omitted — unmatched routes are already served by a pre-rendered `index.html`.
 - Vercel uses `vercel.json`, checking generated static files before falling back to the application shell.
 - Other static hosts should serve an existing route's `index.html`, then use `/index.html` only for unmatched routes.
 
