@@ -1,7 +1,11 @@
-# Fallback for unmatched client-side routes on Netlify and Cloudflare Pages.
+# Cloudflare Pages / Netlify: legacy product slugs → new msl-c* slugs (permanent 301).
+# Every route is pre-rendered as dist/<route>/index.html by scripts/build_static_routes.mjs,
+# so the trailing fallback below only rewrites unmatched paths to the app shell — no loop.
 /product/caldera-3-food-grade-heat-transfer-fluid/ /product/msl-c3-food-grade-heat-transfer-fluid/ 301
 /product/caldera-5-high-flash-food-grade-heat-transfer-fluid/ /product/msl-c5-high-flash-food-grade-heat-transfer-fluid/ 301
 /product/caldera-12-food-grade-low-temperature-heat-transfer-fluid/ /product/msl-c12-food-grade-low-temperature-heat-transfer-fluid/ 301
 /product/blue-star-9600-40-grease/ /product/blue-star-xh-9650-460-1-5/ 301
 /product/food-grade-high-temperature-gear-lubricant/ /product/synthetic-food-grade-gear-fluid/ 301
+
+# Unmatched routes: serve the app shell (SPA fallback for client-side routes).
 /* /index.html 200
